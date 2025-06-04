@@ -29,7 +29,10 @@ function verifyToken(token) {
 // JWT authentication middleware
 function jwtAuth(req, resp, next) {
     // URLs that don't require authentication
-    const nonProtectedUrls = [ ]
+    const nonProtectedUrls = [
+        "/users/signin", 
+        "/users/signup"
+     ]
     
     // Check if current URL is in non-protected list
     const isProtectedRoute = !nonProtectedUrls.some(url => req.url.startsWith(url))
