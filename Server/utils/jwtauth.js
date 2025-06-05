@@ -31,7 +31,10 @@ function jwtAuth(req, resp, next) {
     // URLs that don't require authentication
     const nonProtectedUrls = [
         "/users/signin", 
-        "/users/signup"
+        "/users/signup",
+        "/users/forgot-password",
+        "/users/verify-otp",
+        "/users/reset-password"
      ]
     
     // Check if current URL is in non-protected list

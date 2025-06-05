@@ -3,7 +3,55 @@ const { apiSuccess, apiError } = require("../utils/apiresult");
 const { createToken } = require("../utils/jwtauth");
 const express = require("express");
 const bcrypt = require("bcrypt");
+const nodemailer = require('nodemailer'); // npm install nodemailer
+const crypto = require("crypto");
+const redis = require('redis');
 const router = express.Router();
+
+const client = redis.createClient();
+
+// Handle Redis client errors
+client.on('error', (err) => {
+    console.error('Redis Client Error', err);
+});
+
+// Ensure the client is connected before using it
+client.connect().catch(err => {
+    console.error('Failed to connect to Redis:', err);
+});
+
+
+// Email configuration
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER || 'gennugennie@gmail.com',
+        pass: process.env.EMAIL_PASS || 'cqjw yrme kbqu tbhm'
+    }
+});
+
+// Utility function to generate OTP
+function generateOTP() {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+}             
+
+// Utility function to send email
+async function sendEmail(to, subject, text, html) {
+    try {
+        const mailOptions = {
+            from: process.env.EMAIL_USER || 'gennugennie@gmail.com',
+            to,
+            subject,
+            text,
+            html
+        };
+        await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.error('Email sending failed:', error);
+        return false;
+    }
+}
 
 // common prefix -- /users
 
@@ -37,7 +85,7 @@ router.get("/byemail/:email", (req, resp) => {
 
 // GET /users/customers/all - Get all customers for admin
 router.get("/customers/all", (req, resp) => {
-    // Check if user is admin 
+    // Check if user is admin (assuming middleware sets req.user)
     if(req.user && req.user.role !== 'ADMIN') {
         return resp.send(apiError("Access denied. Admin privileges required."))
     }
@@ -126,7 +174,7 @@ router.post("/signup", (req, resp) => {
     
     const encpassword = bcrypt.hashSync(password, 10)
     const is_active = 1
-    const User_role = "ADMIN"
+    const User_role = "CUSTOMER"
     
     db.query("INSERT INTO users (name, email, phone, password, is_active, User_role) VALUES (?, ?, ?, ?, ?, ?)",
         [name, email, phone, encpassword, is_active, User_role],
@@ -152,6 +200,156 @@ router.post("/signup", (req, resp) => {
     )
 })
 
+// POST /users/forgot-password -> Forgot Password
+router.post("/forgot-password", async (req, resp) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return resp.send(apiError("Email is required"));
+    }
+
+    // Check if user exists
+    db.query("SELECT user_id, name, email FROM users WHERE email=? AND is_active=1", [email],
+        async (err, results) => {
+            if (err) return resp.send(apiError(err.message));
+
+            if (results.length !== 1) {
+                return resp.send(apiError("User  not found or account is deactivated"));
+            }
+
+            const user = results[0];
+            const otp = generateOTP();
+            const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+            // Store OTP in Redis
+            try {
+                await client.setEx(`otp:${email}`, 600, JSON.stringify({ otp, expiresAt, userId: user.user_id }));
+            } catch (error) {
+                console.error('Error storing OTP in Redis:', error);
+                return resp.send(apiError("Failed to store OTP. Please try again."));
+            }
+
+            // Send OTP via email
+            const emailSubject = "Password Reset OTP - Grocery Store";
+            const emailText = `Your OTP for password reset is: ${otp}. This OTP will expire in 10 minutes.`;
+            const emailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Password Reset Request</h2>
+                    <p>Hello ${user.name},</p>
+                    <p>You have requested to reset your password. Please use the following OTP:</p>
+                    <div style="background-color: #f0f0f0; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 3px; margin: 20px 0;">
+                        ${otp}
+                    </div>
+                    <p style="color: #666;">This OTP will expire in 10 minutes.</p>
+                    <p>If you didn't request this, please ignore this email.</p>
+                </div>
+            `;
+
+            const emailSent = await sendEmail(email, emailSubject, emailText, emailHtml);
+
+            if (emailSent) {
+                resp.send(apiSuccess("OTP sent successfully to your email"));
+            } else {
+                resp.send(apiError("Failed to send OTP. Please try again."));
+            }
+        }
+    );
+});
+
+// Ensure to close the Redis client when shutting down the application
+process.on('SIGINT', async () => {
+    await client.quit();
+    process.exit(0);
+});
+
+
+
+// POST /users/verify-otp - Verify OTP
+router.post("/verify-otp", async (req, resp) => {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+        return resp.send(apiError("Email and OTP are required"));
+    }
+
+    // Get OTP from Redis
+    const storedOtpData = await client.get(`otp:${email}`);
+    if (!storedOtpData) {
+        return resp.send(apiError("OTP not found or expired"));
+    }
+
+    const parsedOtpData = JSON.parse(storedOtpData);
+
+    if (Date.now() > parsedOtpData.expiresAt) {
+        await client.del(`otp:${email}`); // Remove expired OTP
+        return resp.send(apiError("OTP has expired"));
+    }
+
+    if (parsedOtpData.otp !== otp) {
+        return resp.send(apiError("Invalid OTP"));
+    }
+
+    // OTP is valid, generate a temporary token for password reset
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Store reset token (expires in 15 minutes)
+    await client.setEx(resetToken, 900, JSON.stringify({
+        email,
+        userId: parsedOtpData.userId,
+        expiresAt: Date.now() + 15 * 60 * 1000
+    }));
+
+    // Remove OTP from Redis
+    await client.del(`otp:${email}`);
+
+    resp.send(apiSuccess({
+        message: "OTP verified successfully",
+        resetToken: resetToken
+    }));
+});
+
+
+
+// POST /users/reset-password - Reset password using reset token
+router.post("/reset-password", async (req, resp) => {
+    const { resetToken, newPassword } = req.body;
+
+    if (!resetToken || !newPassword) {
+        return resp.send(apiError("Reset token and new password are required"));
+    }
+
+    if (newPassword.length < 6) {
+        return resp.send(apiError("Password must be at least 6 characters long"));
+    }
+
+    const resetData = await client.get(resetToken);
+    if (!resetData) {
+        return resp.send(apiError("Invalid or expired reset token"));
+    }
+
+    const parsedResetData = JSON.parse(resetData);
+
+    if (Date.now() > parsedResetData.expiresAt) {
+        await client.del(resetToken); // Now this is valid
+        return resp.send(apiError("Reset token has expired"));
+    }
+
+    const encPassword = bcrypt.hashSync(newPassword, 10);
+
+    // Make the db.query callback async
+    db.query("UPDATE users SET password=? WHERE user_id=?", [encPassword, parsedResetData.userId],
+        async (err, result) => { // Marked as async
+            if (err) return resp.send(apiError(err.message));
+
+            if (result.affectedRows !== 1) return resp.send(apiError("Failed to update password"));
+
+            // Remove reset token from Redis
+            await client.del(resetToken); // Now this is valid
+
+            resp.send(apiSuccess("Password reset successfully"));
+        }
+    );
+});
 
 // PUT /users/:user_id - Update user profile
 router.put("/:user_id", (req, resp) => {
@@ -188,25 +386,6 @@ router.put("/:user_id", (req, resp) => {
     )
 })
 
-// DELETE /users/:email - Deactivate user
-router.delete("/:email", (req, resp) => {
-    // Check if admin
-    if(req.user && req.user.role !== 'ADMIN') {
-        return resp.send(apiError("Access denied. Admin privileges required."))
-    }
-    
-    db.query("UPDATE users SET is_active = FALSE WHERE email = ?", [req.params.email],
-        (err, results) => {
-            if (err)
-                return resp.send(apiError(err.message))
-            
-            if (results.affectedRows !== 1)
-                return resp.send(apiError("User not found"))
-            
-            return resp.send(apiSuccess("User deactivated successfully"))
-        }
-    )
-})
 
 // PATCH /users/activate/:email - Activate user (Admin only)
 router.patch("/activate/:email", (req, resp) => {
@@ -301,5 +480,28 @@ router.patch("/role/:user_id", (req, resp) => {
     )
 })
 
+// DELETE /users/:email - Deactivate user
+router.delete("/:email", (req, resp) => {
+    // Check if admin
+    if(req.user && req.user.role !== 'ADMIN') {
+        return resp.send(apiError("Access denied. Admin privileges required."))
+    }
+    
+    db.query("UPDATE users SET is_active = FALSE WHERE email = ?", [req.params.email],
+        (err, results) => {
+            if (err)
+                return resp.send(apiError(err.message))
+            
+            if (results.affectedRows !== 1)
+                return resp.send(apiError("User not found"))
+            
+            return resp.send(apiSuccess("User deactivated successfully"))
+        }
+    )
+})
+
+
+
 module.exports = router
+
 
