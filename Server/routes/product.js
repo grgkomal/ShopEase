@@ -8,13 +8,9 @@ const upload = multer({ dest: 'uploads/' });
 const fs = require("fs");
 const router = express.Router();
 
-
-// Apply JWT authentication to all routes
-// router.use(jwtAuth);
-
 // ======================= PRODUCTS ROUTES =======================
 
-// GET /api/product - Get all products
+// GET /product - Get all products
 router.get("/", (req, resp) => {
     const query = `
         SELECT p.product_name, p.description, p.price, p.product_quantity, p.image_url, c.category_name 
@@ -30,7 +26,7 @@ router.get("/", (req, resp) => {
     });
 });
 
-// GET /api/product/category/:category_id - Get products by category
+// GET /product/category/:category_id - Get products by category
 router.get("/category/:category_id", (req, resp) => {
     const query = `
         SELECT p.product_name, p.description, p.price, p.product_quantity, p.image_url, c.category_name 
@@ -47,7 +43,7 @@ router.get("/category/:category_id", (req, resp) => {
     });
 });
 
-// GET /api/product/:product_id - Get product by ID
+// GET /product/:product_id - Get product by ID
 router.get("/:product_id", (req, resp) => {
     const query = `
         SELECT p.product_name, p.description, p.price, p.product_quantity, p.image_url, c.category_name 
@@ -67,8 +63,7 @@ router.get("/:product_id", (req, resp) => {
     });
 });
 
-// POST /api/product - Add new product (Admin only) 
-router.post("/",adminAuth, upload.single('image_url'), (req, resp) => {
+router.post("/", adminAuth,  upload.single('image_url'), (req, resp) => {
 
     const { category_id, product_name, description, price, product_quantity } = req.body;
 
@@ -125,9 +120,9 @@ router.post("/",adminAuth, upload.single('image_url'), (req, resp) => {
 
 
 
-// PUT /api/product/:product_id - Update product (Admin only)
- 
-router.put("/:product_id",/* adminAuth,*/ upload.single('image_url'), (req, resp) => {
+// PUT /product/:product_id - Update product (Admin only)
+
+router.put("/:product_id", adminAuth, upload.single('image_url'), (req, resp) => {
     const { product_name, description, price, product_quantity } = req.body;
     const image_url = req.file ? req.file.filename : req.body.existing_image_url;
 
@@ -144,39 +139,29 @@ router.put("/:product_id",/* adminAuth,*/ upload.single('image_url'), (req, resp
     if (product_quantity < 0) {
         return resp.send(apiError("Quantity cannot be negative"));
     }
-    
-    // // Check if category exists
-    // db.query("SELECT category_id FROM categories WHERE category_id=?", [category_id],
-    //     (err, categoryResults) => {
-    //         if (err)
-    //             return resp.send(apiError(err.message));
-            
-    //         if (categoryResults.length === 0)
-    //             return resp.send(apiError("Category not found"));
-            
-            // Update product
-            db.query("UPDATE products SET product_name=?, description=?, price=?, product_quantity=?, image_url=? WHERE product_id=?",
-                [ product_name, description, price, product_quantity, image_url, req.params.product_id],
-                (err, result) => {
+  
+   // Update product
+    db.query("UPDATE products SET product_name=?, description=?, price=?, product_quantity=?, image_url=? WHERE product_id=?",
+    [ product_name, description, price, product_quantity, image_url, req.params.product_id],
+    (err, result) => {
+        if (err)
+            return resp.send(apiError(err.message));
+               
+        if (result.affectedRows === 0)
+            return resp.send(apiError("Product not found"));
+                    
+        // Return updated product with category info
+            const query = `
+                SELECT p.product_name, p.description, p.price, p.product_quantity, p.image_url, c.category_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.category_id 
+                WHERE p.product_id = ?
+                `;
+                    
+                db.query(query, [req.params.product_id], (err, results) => {
                     if (err)
                         return resp.send(apiError(err.message));
-                    
-                    if (result.affectedRows === 0)
-                        return resp.send(apiError("Product not found"));
-                    
-                    // Return updated product with category info
-                    const query = `
-                        SELECT p.product_name, p.description, p.price, p.product_quantity, p.image_url, c.category_name 
-                        FROM products p 
-                        LEFT JOIN categories c ON p.category_id = c.category_id 
-                        WHERE p.product_id = ?
-                    `;
-                    
-                    db.query(query, [req.params.product_id], (err, results) => {
-                        if (err)
-                            return resp.send(apiError(err.message));
-                        resp.send(apiSuccess(results[0]));
-                    // });
+                    resp.send(apiSuccess(results[0]));
                 }
             );
         }
@@ -184,7 +169,7 @@ router.put("/:product_id",/* adminAuth,*/ upload.single('image_url'), (req, resp
 });
 
 
-// DELETE /api/product/:product_id - Delete product (Admin only)
+// DELETE /product/:product_id - Delete product (Admin only)
 router.delete("/:product_id", adminAuth, (req, resp) => {
     // Check if product is in any cart or order
     db.query("SELECT COUNT(*) as cart_count FROM cart WHERE product_id=?", [req.params.product_id],
@@ -223,7 +208,6 @@ router.delete("/:product_id", adminAuth, (req, resp) => {
         }
     );
 });
-
 
 
 module.exports = router;
