@@ -3,6 +3,7 @@ const app = express();
 const userRouter = require("./routes/users");
 const categoryRouter = require("./routes/category");
 const productRouter = require("./routes/product");
+const addressesRouter = require("./routes/addresses");
 
 const { jwtAuth } = require("./utils/jwtauth");
 
@@ -11,6 +12,7 @@ app.use(jwtAuth);
 app.use("/users", userRouter);
 app.use("/category", categoryRouter);
 app.use("/product", productRouter);
+app.use("/addresses", addressesRouter);
 
 const port = 3000;
 app.listen(port, "0.0.0.0", () => {
