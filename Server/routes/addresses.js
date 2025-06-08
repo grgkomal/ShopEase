@@ -60,9 +60,52 @@ router.post("/", (req, resp) => {
 
 
 // PUT /addresses/:id - Update delivery address
+router.put("/:id", (req, resp) => {
+    const user_id = req.user.id;
+    const { building, area, pincode, phone, is_default } = req.body;
+    
+    if (!building || !area || !pincode || !phone) {
+        return resp.send(apiError("Building, area, pincode, and phone are required"));
+    }
+    
+    // If this is set as default, update other addresses
+    if (is_default) {
+        db.query("UPDATE delivery_addresses SET is_default = 0 WHERE user_id = ? AND address_id != ?", 
+            [user_id, req.params.id], (err) => {
+            if (err) console.log("Error updating default addresses:", err.message);
+        });
+    }
+    
+    const query = "UPDATE delivery_addresses SET building=?, area=?, pincode=?, phone=?, is_default=? WHERE address_id=? AND user_id=?";
+    
+    db.query(query, [building, area, pincode, phone, is_default || 0, req.params.id, user_id], (err, result) => {
+        if (err)
+            return resp.send(apiError(err.message));
+        
+        if (result.affectedRows === 0)
+            return resp.send(apiError("Address not found"));
+        
+        db.query("SELECT * FROM delivery_addresses WHERE address_id = ?", [req.params.id], (err, results) => {
+            if (err)
+                return resp.send(apiError(err.message));
+            resp.send(apiSuccess(results[0]));
+        });
+    });
+});
 
 // DELETE /addresses/:id - Delete delivery address
-
-
+router.delete("/:id", (req, resp) => {
+    const user_id = req.user.id;
+    db.query("DELETE FROM delivery_addresses WHERE address_id = ? AND user_id = ?", 
+        [req.params.id, user_id], (err, result) => {
+        if (err)
+            return resp.send(apiError(err.message));
+        
+        if (result.affectedRows === 0)
+            return resp.send(apiError("Address not found"));
+        
+        resp.send(apiSuccess("Address deleted successfully"));
+    });
+});
 
 module.exports = router;
