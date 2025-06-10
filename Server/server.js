@@ -4,6 +4,7 @@ const userRouter = require("./routes/users");
 const categoryRouter = require("./routes/category");
 const productRouter = require("./routes/product");
 const addressesRouter = require("./routes/addresses");
+const cartRouter = require("./routes/cart");
 
 const { jwtAuth } = require("./utils/jwtauth");
 
@@ -13,6 +14,7 @@ app.use("/users", userRouter);
 app.use("/category", categoryRouter);
 app.use("/product", productRouter);
 app.use("/addresses", addressesRouter);
+app.use("/cart", cartRouter);
 
 const port = 3000;
 app.listen(port, "0.0.0.0", () => {
