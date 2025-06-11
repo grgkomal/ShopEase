@@ -17,7 +17,6 @@ router.get("", (req, resp) => {
             o.user_id,
             o.total_amount,
             o.order_date,
-           
             da.building, 
             da.area, 
             da.pincode,
@@ -47,7 +46,6 @@ router.get("/:order_id", (req, resp) => {
             o.user_id,
             o.total_amount,
             o.order_date,
-          
             da.building, 
             da.area, 
             da.pincode, 
