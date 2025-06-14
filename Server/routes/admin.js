@@ -3,14 +3,14 @@ const db = require("../utils/dbpool");
 const { apiSuccess, apiError } = require("../utils/apiresult");
 const { jwtAuth, adminAuth } = require("../utils/jwtauth");
 const express = require("express");
+const { logUserAction } = require("../utils/userLogs");
 const router = express.Router();
-
 
 
 // ======================= ADMIN ROUTES =======================
 
 // ----------------------- ORDER DETAILS ----------------------
-// GET /api/admin/orders/summary - Get total orders count for admin
+// GET /admin/orders/summary - Get total orders count for admin
 router.get("/orders/summary", adminAuth, (req, resp) => {    
     const user_id = req.user.id;                       
     const queries = [
@@ -42,7 +42,7 @@ router.get("/orders/summary", adminAuth, (req, resp) => {
     });
 });
 
-// GET /api/admin/orders - Get all orders for admin
+// GET /admin/orders - Get all orders for admin
 router.get("/orders", adminAuth, (req, resp) => {
     const query = `
         SELECT os.*, u.name as customer_name, u.email as customer_email,
@@ -85,7 +85,7 @@ router.get("/orders/CUSTOMER", adminAuth, (req, res) => {
     });
 });
 
-// GET /api/admin/orders/:id - Get single order
+// GET /admin/orders/:id - Get single order
 router.get("/orders/:order_id", adminAuth, (req, res) => {
      const order_id = req.params.order_id;
     
@@ -114,7 +114,7 @@ router.get("/orders/:order_id", adminAuth, (req, res) => {
 });
 
 
-// GET /api/admin/dashboard - Get simple dashboard data
+// GET /admin/dashboard - Get simple dashboard data
 router.get("/dashboard", adminAuth, (req, res) => {
     // Get total orders
     db.query("SELECT COUNT(*) as total_orders FROM orders", (err1, result1) => {
@@ -154,8 +154,8 @@ router.patch("/orders/:order_id/status", adminAuth, (req, resp) => {
     const order_id = req.params.order_id;
     
     // Validate order_status
-    if (!order_status || !['PENDING', 'DELIVERED', 'CANCELLED'].includes(order_status.toUpperCase())) {
-        return resp.send(apiError("Valid order status is required (Pending, Processing, Shipped, Delivered, Cancelled)"));
+    if (!order_status || !['PENDING', 'DELIVERED'].includes(order_status.toUpperCase())) {
+        return resp.send(apiError("Valid order status is required (Pending, Delivered)"));
     }
     
     db.query("UPDATE order_summary SET order_status = ? WHERE order_summary_id = ?",
@@ -175,7 +175,7 @@ router.patch("/orders/:order_id/status", adminAuth, (req, resp) => {
 
 // ----------------------- EMPLOYEE DETAILS -----------------------
 
-// GET /api/admin/employees - Get all active employees
+// GET /admin/employees - Get all active employees
 router.get("/employees", adminAuth, (req, res) => {
     const query = `
         SELECT 
@@ -184,7 +184,6 @@ router.get("/employees", adminAuth, (req, res) => {
             email,
             phone,
             User_role,
-           
             created_at
         FROM users 
         WHERE User_role IN ('EMPLOYEE', 'ADMIN') AND is_active = 1
@@ -200,7 +199,7 @@ router.get("/employees", adminAuth, (req, res) => {
 });
 
 
-// GET /api/admin/employees/inactive - Get inactive employees
+// GET /admin/employees/inactive - Get inactive employees
 router.get("/employees/inactive", adminAuth, (req, res) => {
     const query = `
         SELECT 
@@ -224,7 +223,7 @@ router.get("/employees/inactive", adminAuth, (req, res) => {
 });
 
 
-// PATCH /api/admin/employees/:id/toggle - Activate/Deactivate employee
+// PATCH /admin/employees/:id/toggle - Activate/Deactivate employee
 router.patch("/employees/:email/toggle", adminAuth, (req, res) => {
     // const userId = req.params.user_id;
     const user_email = req.params.email;
@@ -240,22 +239,15 @@ router.patch("/employees/:email/toggle", adminAuth, (req, res) => {
             
             if (results.affectedRows !== 1)
                 return res.send(apiError("User not found"))
-            
-        
         const message = isActive ? "Employee activated" : "Employee deactivated";
         res.send(apiSuccess({ message: message }));
     });
 });
 
 // PATCH /users/role/:user_id - Change user role (Admin only)
-router.patch("/role/:user_id", (req, resp) => {
+router.patch("/role/:user_id",adminAuth, (req, resp) => {
     const {role} = req.body
     const userId = req.params.user_id
-    
-    // Check if admin
-    if(req.user && req.user.role !== 'ADMIN') {
-        return resp.send(apiError("Access denied. Admin privileges required."))
-    }
     
     if(!role || !['ADMIN', 'CUSTOMER'].includes(role)) {
         return resp.send(apiError("Valid role (ADMIN or CUSTOMER) is required"))
@@ -274,10 +266,9 @@ router.patch("/role/:user_id", (req, resp) => {
     )
 })
 
-
 // ----------------------- CUSTOMERS DETAILS -----------------------
 
-// GET /api/admin/customers - Get all customers
+// GET /admin/customers - Get all customers
 router.get("/customers", adminAuth, (req, res) => {
     const query = `
         SELECT 
@@ -289,7 +280,7 @@ router.get("/customers", adminAuth, (req, res) => {
             is_active
         FROM users 
         WHERE User_role = 'CUSTOMER'
-        ORDER BY name
+        ORDER BY created_at DESC
     `;
     
     db.query(query, (err, results) => {
@@ -300,13 +291,10 @@ router.get("/customers", adminAuth, (req, res) => {
     });
 });
 
+
 // GET /users/all - Get all users for admin
-router.get("/all/users", (req, resp) => {
-    // Check if user is admin
-    if(req.user && req.user.role !== 'ADMIN') {
-        return resp.send(apiError("Access denied. Admin privileges required."))
-    }
-    
+router.get("/all/users",adminAuth, (req, resp) => {
+   
     db.query("SELECT user_id, name, email, phone, User_role, is_active, created_at FROM users ORDER BY created_at DESC",
         (err, results) => {
             if(err)
@@ -317,4 +305,93 @@ router.get("/all/users", (req, resp) => {
 })
 
 
+//------------------------ USER_LOGS DETAILS ---------------------------------
+
+// GET /admin/logs - Get all user activity logs
+router.get("/logs", adminAuth, (req, res) => {
+    const query = `
+        SELECT 
+            ul.log_id,
+            ul.user_id,
+            u.name as user_name,
+            u.email as user_email,
+            u.User_role as user_role,
+            ul.action_type,
+            ul.action_details,
+            ul.ip_address,
+            ul.created_at as log_time
+        FROM user_logs ul
+        JOIN users u ON ul.user_id = u.user_id
+        ORDER BY ul.created_at DESC
+        LIMIT 100
+    `;
+    
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.send(apiError(err.message));
+        }
+        res.send(apiSuccess(results));
+    });
+});
+
+
+// GET /admin/logs/user/:user_id - Get logs for specific user
+router.get("/logs/user/:user_id", adminAuth, (req, res) => {
+    const user_id = req.params.user_id;
+    
+    const query = `
+        SELECT 
+            ul.log_id,
+            ul.action_type,
+            ul.action_details,
+            ul.ip_address,
+            ul.created_at as log_time,
+            u.name as user_name,
+            u.email as user_email
+        FROM user_logs ul
+        JOIN users u ON ul.user_id = u.user_id
+        WHERE ul.user_id = ?
+        ORDER BY ul.created_at DESC
+        LIMIT 50
+    `;
+    
+    db.query(query, [user_id], (err, results) => {
+        if (err) {
+            return res.send(apiError(err.message));
+        }
+        res.send(apiSuccess(results));
+    });
+});
+
+
+// GET /admin/logs/today - Get today's activity logs
+router.get("/logs/today", adminAuth, (req, res) => {
+    const query = `
+        SELECT 
+            ul.log_id,
+            ul.user_id,
+            u.name as user_name,
+            u.email as user_email,
+            ul.action_type,
+            ul.action_details,
+            ul.ip_address,
+            ul.created_at as log_time
+        FROM user_logs ul
+        JOIN users u ON ul.user_id = u.user_id
+        WHERE DATE(ul.created_at) = CURDATE()
+        ORDER BY ul.created_at DESC
+    `;
+    
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.send(apiError(err.message));
+        }
+        res.send(apiSuccess(results));
+    });
+});
+
+
+
 module.exports = router;
+
+
