@@ -8,9 +8,9 @@ export async function login(email, password) {
   try {
     const body = { email, password };
     const url = `${config.server}/users/signin`;
-    console.log('Login request to:', url);
+    // console.log('Login request to:', url);
     const response = await axios.post(url, body);
-    console.log('Login response:', response.data);
+    // console.log('Login response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Sign In Error:', error);
@@ -26,9 +26,9 @@ export async function adminlogin(email, password) {
   try {
     const body = { email, password };
     const url = `${config.server}/users/adminsignin`;
-    console.log('Login request to:', url);
+    // console.log('Login request to:', url);
     const response = await axios.post(url, body);
-    console.log('Login response:', response.data);
+    // console.log('Login response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Sign In Error:', error);
@@ -45,9 +45,9 @@ export async function signUp(name, email, password, phone) {
   try {
     const body = { name, email, password, phone };
     const url = `${config.server}/users/signup`;
-    console.log('SignUp request to:', url);
+    // console.log('SignUp request to:', url);
     const response = await axios.post(url, body);
-    console.log('SignUp response:', response.data);
+    // console.log('SignUp response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Sign Up Error:', error);
@@ -82,7 +82,7 @@ export const getUserByEmail = async (email) => {
 // Get current user
 export const getCurrentUser = async () => {
   try {
-    console.log('Fetching current user data');
+    // console.log('Fetching current user data');
     const { token } = await getCache();
     if (!token) {
       throw new Error('No authentication token found');
@@ -94,7 +94,7 @@ export const getCurrentUser = async () => {
         'Content-Type': 'application/json'
       }
     });
-    console.log('Current user data fetched successfully:', response.data);
+    // console.log('Current user data fetched successfully:', response.data);
     return response.data;
   } catch (error) {
     console.error('Get Current User Error:', error.response?.data || error.message);
@@ -111,7 +111,7 @@ export async function getUserById(user_id) {
     }
     
     const url = `${config.server}/users/${user_id}`;
-    console.log('Get user by ID request to:', url);
+    // console.log('Get user by ID request to:', url);
     
     const response = await axios.get(url, {
       headers: { 
@@ -120,7 +120,7 @@ export async function getUserById(user_id) {
       }
     });
     
-    console.log('Get user by ID response:', response.data);
+    // console.log('Get user by ID response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Get User by ID Error:', error);
@@ -134,65 +134,65 @@ export async function getUserById(user_id) {
 // 1. First, let's create a comprehensive debug version of updateUser
 export const updateUser = async (user_id, userData, setLoading) => {
   try {
-    console.log('=== UPDATE USER DEBUG START ===');
-    console.log('1. Input parameters:');
-    console.log('   user_id:', user_id);
-    console.log('   userData:', JSON.stringify(userData, null, 2));
+    // console.log('=== UPDATE USER DEBUG START ===');
+    // console.log('1. Input parameters:');
+    // console.log('   user_id:', user_id);
+    // console.log('   userData:', JSON.stringify(userData, null, 2));
     
     if (setLoading) setLoading(true);
     
     // Debug: Check cache
-    console.log('2. Getting cache...');
+    // console.log('2. Getting cache...');
     const cache = await getCache();
-    console.log('   Cache result:', cache);
+    // console.log('   Cache result:', cache);
     
     const { token } = cache;
     if (!token) {
-      console.log('❌ No token found in cache');
+      // console.log('❌ No token found in cache');
       return { success: false, message: 'No authentication token found' };
     }
-    console.log('✅ Token found:', token.substring(0, 20) + '...');
+    // console.log('✅ Token found:', token.substring(0, 20) + '...');
     
     // Debug: Build URL
     const url = `${config.server}/users/${user_id}`;
-    console.log('3. Request URL:', url);
-    console.log('   config.server:', config.server);
+    // console.log('3. Request URL:', url);
+    // console.log('   config.server:', config.server);
     
     // Debug: Build headers
     const headers = { 
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
     };
-    console.log('4. Request headers:', headers);
+    // console.log('4. Request headers:', headers);
     
     // Debug: Make request
-    console.log('5. Making PUT request...');
+    // console.log('5. Making PUT request...');
     const response = await axios.put(url, userData, { headers });
     
-    console.log('6. Response received:');
-    console.log('   Status:', response.status);
-    console.log('   Data:', JSON.stringify(response.data, null, 2));
-    console.log('=== UPDATE USER DEBUG END ===');
+    // console.log('6. Response received:');
+    // console.log('   Status:', response.status);
+    // console.log('   Data:', JSON.stringify(response.data, null, 2));
+    // console.log('=== UPDATE USER DEBUG END ===');
     
     return response.data;
     
   } catch (error) {
-    console.log('=== UPDATE USER ERROR DEBUG ===');
-    console.log('Error object:', error);
-    console.log('Error message:', error.message);
-    console.log('Error response:', error.response);
+    // console.log('=== UPDATE USER ERROR DEBUG ===');
+    // console.log('Error object:', error);
+    // console.log('Error message:', error.message);
+    // console.log('Error response:', error.response);
     
     if (error.response) {
-      console.log('Response status:', error.response.status);
-      console.log('Response data:', JSON.stringify(error.response.data, null, 2));
-      console.log('Response headers:', error.response.headers);
+      // console.log('Response status:', error.response.status);
+      // console.log('Response data:', JSON.stringify(error.response.data, null, 2));
+      // console.log('Response headers:', error.response.headers);
     }
     
     if (error.request) {
-      console.log('Request was made but no response:', error.request);
+      // console.log('Request was made but no response:', error.request);
     }
     
-    console.log('=== UPDATE USER ERROR END ===');
+    // console.log('=== UPDATE USER ERROR END ===');
     
     return { 
       success: false, 
@@ -231,14 +231,14 @@ export const updateUserPatch = async (user_id, userData, setLoading) => {
 // 3. Version using the api instance (which should handle auth automatically)
 export const updateUserWithApi = async (user_id, userData, setLoading) => {
   try {
-    console.log('Using API instance for update');
-    console.log('User ID:', user_id);
-    console.log('Data:', userData);
+    // console.log('Using API instance for update');
+    // console.log('User ID:', user_id);
+    // console.log('Data:', userData);
     
     if (setLoading) setLoading(true);
     
     const response = await api.put(`/users/${user_id}`, userData);
-    console.log('API response:', response.data);
+    // console.log('API response:', response.data);
     
     return response.data;
   } catch (error) {
@@ -254,22 +254,22 @@ export const updateUserWithApi = async (user_id, userData, setLoading) => {
 
 // 4. Test function to check all endpoints
 export const testUpdateMethods = async (user_id, userData, setLoading) => {
-  console.log('=== TESTING ALL UPDATE METHODS ===');
+  // console.log('=== TESTING ALL UPDATE METHODS ===');
   
   // Method 1: PUT with axios
-  console.log('Testing Method 1: PUT with axios');
+  // console.log('Testing Method 1: PUT with axios');
   const result1 = await updateUser(user_id, userData, setLoading);
-  console.log('Result 1:', result1);
+  // console.log('Result 1:', result1);
   
   // Method 2: PATCH with axios
-  console.log('Testing Method 2: PATCH with axios');
+  // console.log('Testing Method 2: PATCH with axios');
   const result2 = await updateUserPatch(user_id, userData, setLoading);
-  console.log('Result 2:', result2);
+  // console.log('Result 2:', result2);
   
   // Method 3: PUT with api instance
-  console.log('Testing Method 3: PUT with api instance');
+  // console.log('Testing Method 3: PUT with api instance');
   const result3 = await updateUserWithApi(user_id, userData, setLoading);
-  console.log('Result 3:', result3);
+  // console.log('Result 3:', result3);
   
   return { result1, result2, result3 };
 };
@@ -315,14 +315,14 @@ export async function changePassword(currentPassword, newPassword) {
     // Try each endpoint until one works
     for (const url of endpoints) {
       try {
-        console.log(`Trying change password endpoint: ${url}`);
+        // console.log(`Trying change password endpoint: ${url}`);
         
         // Try different HTTP methods
         const methods = ['PATCH', 'PUT', 'POST'];
         
         for (const method of methods) {
           try {
-            console.log(`Trying ${method} ${url}`);
+            // console.log(`Trying ${method} ${url}`);
             
             const response = await axios({
               method: method.toLowerCase(),
@@ -331,7 +331,7 @@ export async function changePassword(currentPassword, newPassword) {
               headers: headers
             });
 
-            console.log('Change password response:', response.data);
+            // console.log('Change password response:', response.data);
             
             // Return success if we get here
             if (response.data) {
@@ -357,12 +357,12 @@ export async function changePassword(currentPassword, newPassword) {
               };
             }
             // Otherwise, continue trying other methods/endpoints
-            console.log(`${method} ${url} failed, trying next...`);
+            // console.log(`${method} ${url} failed, trying next...`);
           }
         }
         
       } catch (endpointError) {
-        console.log(`Endpoint ${url} failed, trying next...`);
+        // console.log(`Endpoint ${url} failed, trying next...`);
         continue;
       }
     }
@@ -382,17 +382,14 @@ export async function changePassword(currentPassword, newPassword) {
   }
 }
 
-
-
-
 // Forgot Password (public endpoint - no auth required)
 export async function forgotPassword(email) {
   try {
     const body = { email };
     const url = `${config.server}/users/forgot-password`;
-    console.log('Forgot password request to:', url);
+    // console.log('Forgot password request to:', url);
     const response = await axios.post(url, body);
-    console.log('Forgot password response:', response.data);
+    // console.log('Forgot password response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Forgot Password Error:', error);
@@ -408,9 +405,9 @@ export async function verifyOTP(email, otp) {
   try {
     const body = { email, otp };
     const url = `${config.server}/users/verify-otp`;
-    console.log('Verify OTP request to:', url);
+    // console.log('Verify OTP request to:', url);
     const response = await axios.post(url, body);
-    console.log('Verify OTP response:', response.data);
+    // console.log('Verify OTP response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Verify OTP Error:', error);
@@ -426,9 +423,9 @@ export async function resetPassword(resetToken, newPassword) {
   try {
     const body = { token: resetToken, newPassword };
     const url = `${config.server}/users/reset-password`;
-    console.log('Reset password request to:', url);
+    // console.log('Reset password request to:', url);
     const response = await axios.post(url, body);
-    console.log('Reset password response:', response.data);
+    // console.log('Reset password response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Reset Password Error:', error);
