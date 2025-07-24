@@ -16,8 +16,6 @@ router.get("/", (req, resp) => {
     });
 });
 
-
-
 // POST /addresses - Add new delivery address
 router.post("/", (req, resp) => {
     // console.log(req.body);
@@ -67,8 +65,7 @@ router.put("/:id", (req, resp) => {
     if (!building || !area || !pincode || !phone) {
         return resp.send(apiError("Building, area, pincode, and phone are required"));
     }
-    
-    // If this is set as default, update other addresses
+
     if (is_default) {
         db.query("UPDATE delivery_addresses SET is_default = 0 WHERE user_id = ? AND address_id != ?", 
             [user_id, req.params.id], (err) => {

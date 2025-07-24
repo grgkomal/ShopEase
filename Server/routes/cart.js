@@ -5,7 +5,6 @@ const { jwtAuth, adminAuth } = require("../utils/jwtauth");
 const express = require("express");
 const router = express.Router();
 
-
 // ======================= CART ROUTES =======================
 
 // GET /cart - Get user's cart items
@@ -38,7 +37,6 @@ router.get("", (req, resp) => {
 
 // POST /cart - Add item to cart
 router.post("", (req, resp) => {
-    // console.log(req.body);
 
     const user_id = req.user.id;
     const { product_id, quantity } = req.body;
@@ -106,7 +104,6 @@ router.post("", (req, resp) => {
 
 // PUT /cart/:cart_id - Update cart item quantity
 router.put("/:cart_id", (req, resp) => {
-    // console.log(req.body);
 
     const user_id = req.user.id;
     const { quantity } = req.body;
@@ -150,8 +147,6 @@ router.put("/:cart_id", (req, resp) => {
     });
 });
 
-
-
 // DELETE /cart/:cart_id - Remove item from cart
 router.delete("/:cart_id", (req, resp) => {
     // console.log(req.body);
@@ -174,14 +169,13 @@ router.delete("/:cart_id", (req, resp) => {
                     resp.send(apiSuccess("Item removed from cart successfully"));
                 }
             );
-        }
+        }   
     );
 });
 
-
 // DELETE /cart - Clear user's cart
-router.delete("", (req, resp) => {
-    const user_id = req.user.id;
+router.delete("/clear", (req, resp) => {
+    const user_id = req.user.id || req.user.user_id;
     db.query("DELETE FROM cart WHERE user_id=?", [user_id],
         (err, result) => {
             if (err)
@@ -191,6 +185,76 @@ router.delete("", (req, resp) => {
     );
 });
 
+// POST /orders - Create new order from cart
+router.post("/order", (req, resp) => {
+    console.log(req.body);
 
+    const user_id = req.user.id;
+    const { address_id } = req.body;
+
+    if (!address_id) {
+        return resp.send(apiError("Address ID is required"));
+    }
+
+    const cartQuery = `
+        SELECT c.*, p.product_name, p.price, p.product_quantity 
+        FROM cart c
+        JOIN products p ON c.product_id = p.product_id
+        WHERE c.user_id = ?
+    `;
+
+    db.query(cartQuery, [user_id], (err, cartItems) => {
+        if (err) return resp.send(apiError(err.message));
+
+        if (cartItems.length === 0) return resp.send(apiError("Cart is empty"));
+
+        const totalAmount = cartItems.reduce((sum, item) => sum + parseFloat(item.total_amount), 0);
+
+        const createOrderQuery = `
+            INSERT INTO orders (user_id, address_id, product_id, quantity, total_amount) 
+            VALUES (?, ?, ?, ?, ?)
+        `;
+
+        const firstItem = cartItems[0];
+        
+        db.query(createOrderQuery, [user_id, address_id, firstItem.product_id, firstItem.quantity, totalAmount], (err, result) => {
+            if (err) return resp.send(apiError(err.message));
+
+            const order_id = result.insertId;
+
+            const createOrderSummaryQuery = `
+                INSERT INTO order_summary (order_id, user_id, total_amount, order_status, payment_status) 
+                VALUES (?, ?, ?, 'DELIVERED', 'Cash On Delivery')
+            `;
+
+            db.query(createOrderSummaryQuery, [order_id, user_id, totalAmount], (err, summaryResult) => {
+                if (err) return resp.send(apiError(err.message));
+
+                db.query("DELETE FROM cart WHERE user_id = ?", [user_id], (err) => {
+                    if (err) return resp.send(apiError(err.message));
+
+                    const getOrderSummaryQuery = `
+                        SELECT os.order_id, os.user_id, os.total_amount, os.order_status, os.payment_status, os.order_date
+                        FROM order_summary os
+                        JOIN users u ON os.user_id = u.user_id
+                        WHERE os.order_summary_id = ?
+                    `;
+
+                    db.query(getOrderSummaryQuery, [summaryResult.insertId], (err, orderSummary) => {
+                        if (err) return resp.send(apiError(err.message));
+
+                        resp.send(apiSuccess("Order placed successfully with Cash on Delivery", {
+                            order_summary: orderSummary[0],
+                            order_id: order_id,
+                            total_amount: totalAmount,
+                            payment_method: "Cash On Delivery",
+                            cart_items_count: cartItems.length
+                        }));
+                    });
+                });
+            });
+        });
+    });
+});
 
 module.exports = router; 

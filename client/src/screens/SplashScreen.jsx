@@ -11,7 +11,7 @@ const SplashScreen = ({ navigation }) => {
     const init = async () => {
       const cached = await getCache();  // await the stored data
       const token = cached?.token;
-      const nextScreen = token ? 'Account' : 'Login';
+      const nextScreen = token ? 'Home' : 'Login';
       
 
       setTimeout(() => {

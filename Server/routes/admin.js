@@ -1,3 +1,4 @@
+
 //routes/admin
 const db = require("../utils/dbpool");
 const { apiSuccess, apiError } = require("../utils/apiresult");
@@ -6,18 +7,15 @@ const express = require("express");
 const { logUserAction } = require("../utils/userLogs");
 const router = express.Router();
 
-
 // ======================= ADMIN ROUTES =======================
 
 // ----------------------- ORDER DETAILS ----------------------
 // GET /admin/orders/summary - Get total orders count for admin
-router.get("/orders/summary", adminAuth, (req, resp) => {    
-    const user_id = req.user.id;                       
+router.get("/orders/summary", /*adminAuth,*/ (req, resp) => {    
     const queries = [
         "SELECT COUNT(*) as total_orders FROM orders",
-        "SELECT COUNT(*) as pending_orders FROM order_summary WHERE order_status = 'Pending'",
-        "SELECT COUNT(*) as delivered_orders FROM order_summary WHERE order_status = 'Delivered'",
-        "SELECT COUNT(*) as delivered_orders FROM order_summary WHERE order_status = 'Delivered'",
+        "SELECT COUNT(*) as pending_orders FROM order_summary WHERE order_status = 'PENDING'",
+        "SELECT COUNT(*) as delivered_orders FROM order_summary WHERE order_status = 'DELIVERED'",
         "SELECT SUM(total_amount) as total_revenue FROM orders",
         "SELECT COUNT(DISTINCT user_id) as total_customers FROM orders"
     ];
@@ -26,7 +24,7 @@ router.get("/orders/summary", adminAuth, (req, resp) => {
     const results = {};
     
     queries.forEach((query, index) => {
-        db.query(query,[user_id], (err, result) => {
+        db.query(query, (err, result) => {
             if (err) {
                 return resp.send(apiError(err.message));
             }
@@ -43,37 +41,48 @@ router.get("/orders/summary", adminAuth, (req, resp) => {
 });
 
 // GET /admin/orders - Get all orders for admin
-router.get("/orders", adminAuth, (req, resp) => {
-    const query = `
-        SELECT os.*, u.name as customer_name, u.email as customer_email,
-               da.building, da.area, da.pincode
-        FROM orders os
-        JOIN users u ON os.user_id = u.user_id
-        LEFT JOIN orders o ON os.order_id = o.order_id
-        LEFT JOIN delivery_addresses da ON o.address_id = da.address_id
-        ORDER BY os.order_date DESC
-    `;
-    
-    db.query(query,[req.user.id] ,(err, results) => {
-        if (err)
-            return resp.send(apiError(err.message));
-        resp.send(apiSuccess(results));
-    });
-});
-
-
-// GET /admin/orders/CUSTOMER - Get all orders
-router.get("/orders/CUSTOMER", adminAuth, (req, res) => {
+router.get("/orders", /*adminAuth,*/ (req, resp) => {
     const query = `
         SELECT 
             o.order_id,
             o.user_id,
             o.total_amount,
             o.order_date,
+            o.created_at,
+            os.order_status,
+            u.name as customer_name, 
+            u.email as customer_email,
+            da.building, 
+            da.area, 
+            da.pincode
+        FROM orders o
+        JOIN users u ON o.user_id = u.user_id
+        LEFT JOIN order_summary os ON o.order_id = os.order_id
+        LEFT JOIN delivery_addresses da ON o.address_id = da.address_id
+        ORDER BY o.order_date DESC
+    `;
+    
+    db.query(query, (err, results) => {
+        if (err)
+            return resp.send(apiError(err.message));
+        resp.send(apiSuccess(results));
+    });
+});
+
+// GET /admin/orders/CUSTOMER - Get all customer orders
+router.get("/orders/CUSTOMER", /*adminAuth,*/ (req, res) => {
+    const query = `
+        SELECT 
+            o.order_id,
+            o.user_id,
+            o.total_amount,
+            o.order_date,
+            os.order_status,
             u.name as customer_name,
             u.email as customer_email
         FROM orders o
         JOIN users u ON o.user_id = u.user_id
+        LEFT JOIN order_summary os ON o.order_id = os.order_id
         ORDER BY o.order_date DESC
     `;
     
@@ -85,18 +94,30 @@ router.get("/orders/CUSTOMER", adminAuth, (req, res) => {
     });
 });
 
-// GET /admin/orders/:id - Get single order
-router.get("/orders/:order_id", adminAuth, (req, res) => {
-     const order_id = req.params.order_id;
+// GET /admin/orders/:id - Get single order details
+router.get("/orders/:order_id", /*adminAuth,*/ (req, res) => {
+    const order_id = req.params.order_id;
     
     const query = `
         SELECT 
-            o.address_id, o.order_date, o.product_id, o.quantity, o.total_amount, o.created_at, 
+            o.order_id,
+            o.address_id, 
+            o.order_date, 
+            o.product_id, 
+            o.quantity, 
+            o.total_amount, 
+            o.created_at,
+            os.order_status,
             u.name as customer_name,
             u.email as customer_email,
-            u.phone as customer_phone
+            u.phone as customer_phone,
+            da.building,
+            da.area,
+            da.pincode
         FROM orders o
         JOIN users u ON o.user_id = u.user_id
+        LEFT JOIN order_summary os ON o.order_id = os.order_id
+        LEFT JOIN delivery_addresses da ON o.address_id = da.address_id
         WHERE o.order_id = ?
     `;
     
@@ -113,202 +134,133 @@ router.get("/orders/:order_id", adminAuth, (req, res) => {
     });
 });
 
-
-// GET /admin/dashboard - Get simple dashboard data
-router.get("/dashboard", adminAuth, (req, res) => {
-    // Get total orders
-    db.query("SELECT COUNT(*) as total_orders FROM orders", (err1, result1) => {
-        if (err1) {
-            return res.send(apiError(err1.message));
+// GET /admin/dashboard - Get dashboard summary data
+router.get("/dashboard", /*adminAuth,*/ (req, res) => {
+    const dashboardQuery = `
+        SELECT 
+            COUNT(*) as total_orders,
+            COUNT(CASE WHEN os.order_status = 'PENDING' THEN 1 END) as pending_orders,
+            COUNT(CASE WHEN os.order_status = 'DELIVERED' THEN 1 END) as delivered_orders,
+            SUM(o.total_amount) as total_revenue,
+            COUNT(DISTINCT o.user_id) as total_customers
+        FROM orders o
+        LEFT JOIN order_summary os ON o.order_id = os.order_id
+    `;
+    
+    db.query(dashboardQuery, (err, results) => {
+        if (err) {
+            return res.send(apiError(err.message));
         }
         
-        // Get total customers
-        db.query("SELECT COUNT(*) as total_customers FROM users WHERE User_role = 'CUSTOMER'", (err2, result2) => {
-            if (err2) {
-                return res.send(apiError(err2.message));
+        const dashboard = {
+            total_orders: results[0].total_orders || 0,
+            pending_orders: results[0].pending_orders || 0,
+            delivered_orders: results[0].delivered_orders || 0,
+            total_revenue: results[0].total_revenue || 0,
+            total_customers: results[0].total_customers || 0
+        };
+        
+        res.send(apiSuccess(dashboard));
+    });
+});
+
+// PATCH /admin/orders/:order_id/status - Update order status (Admin only)
+router.patch("/orders/:order_id/status", /*adminAuth,*/ (req, resp) => {
+    const { order_status } = req.body;
+    const order_id = req.params.order_id;
+    
+    const validStatuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+    if (!order_status || !validStatuses.includes(order_status.toUpperCase())) {
+        return resp.send(apiError("Valid order status is required (PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED)"));
+    }
+    db.query("SELECT order_id FROM orders WHERE order_id = ?", [order_id], (err, orderCheck) => {
+        if (err) {
+            return resp.send(apiError(err.message));
+        }
+        
+        if (orderCheck.length === 0) {
+            return resp.send(apiError("Order not found"));
+        }
+        db.query("SELECT order_id FROM order_summary WHERE order_id = ?", [order_id], (err, summaryCheck) => {
+            if (err) {
+                return resp.send(apiError(err.message));
             }
             
-            // Get pending orders
-            db.query("SELECT COUNT(*) as pending_orders FROM order_summary WHERE order_status = 'PENDING'", (err3, result3) => {
-                if (err3) {
-                    return res.send(apiError(err3.message));
+            if (summaryCheck.length === 0) {
+                db.query("INSERT INTO order_summary (order_id, order_status) VALUES (?, ?)", 
+                    [order_id, order_status.toUpperCase()], 
+                    (err, insertResult) => {
+                        if (err) {
+                            return resp.send(apiError(err.message));
+                        }
+                        logUserAction(req.user.id, 'ORDER_STATUS_CREATED', `Created order summary for order ${order_id} with status ${order_status}`);                        
+                        resp.send(apiSuccess(`Order status updated to ${order_status}`));
+                    }
+                );
+            } else {
+                db.query("UPDATE order_summary SET order_status = ? WHERE order_id = ?",
+                    [order_status.toUpperCase(), order_id],
+                    (err, updateResult) => {
+                        if (err) {
+                            return resp.send(apiError(err.message));
+                        }
+                        logUserAction(req.user.id, 'ORDER_STATUS_UPDATED', `Updated order ${order_id} status to ${order_status}`);                       
+                        resp.send(apiSuccess(`Order status updated to ${order_status}`));
+                    }
+                );
+            }
+        });
+    });
+});
+
+// DELETE /admin/orders/:order_id - Delete order (Admin only)
+router.delete("/orders/:order_id", /*adminAuth,*/ (req, resp) => {
+    const order_id = req.params.order_id;
+    
+    db.beginTransaction((err) => {
+        if (err) {
+            return resp.send(apiError(err.message));
+        }
+        
+        db.query("DELETE FROM order_summary WHERE order_id = ?", [order_id], (err, result1) => {
+            if (err) {
+                return db.rollback(() => {
+                    resp.send(apiError(err.message));
+                });
+            }
+            
+            db.query("DELETE FROM orders WHERE order_id = ?", [order_id], (err, result2) => {
+                if (err) {
+                    return db.rollback(() => {
+                        resp.send(apiError(err.message));
+                    });
                 }
                 
-                const dashboard = {
-                    total_orders: result1[0].total_orders,
-                    total_customers: result2[0].total_customers,
-                    pending_orders: result3[0].pending_orders
-                };
+                if (result2.affectedRows === 0) {
+                    return db.rollback(() => {
+                        resp.send(apiError("Order not found"));
+                    });
+                }
                 
-                res.send(apiSuccess(dashboard));
+                db.commit((err) => {
+                    if (err) {
+                        return db.rollback(() => {
+                            resp.send(apiError(err.message));
+                        });
+                    }
+                    
+                    logUserAction(req.user.id, 'ORDER_DELETED', `Deleted order ${order_id}`);
+                    resp.send(apiSuccess("Order deleted successfully"));
+                });
             });
         });
     });
 });
 
-
-
-// PATCH /admin/orders/:order_id/status - Update order status (Admin only)
-router.patch("/orders/:order_id/status", adminAuth, (req, resp) => {
-    const { order_status } = req.body;
-    const order_id = req.params.order_id;
-    
-    // Validate order_status
-    if (!order_status || !['PENDING', 'DELIVERED'].includes(order_status.toUpperCase())) {
-        return resp.send(apiError("Valid order status is required (Pending, Delivered)"));
-    }
-    
-    db.query("UPDATE order_summary SET order_status = ? WHERE order_summary_id = ?",
-        [order_status, order_id],
-        (err, result) => {
-            if (err)
-                return resp.send(apiError(err.message));
-                      
-            if (result.affectedRows === 0)
-                return resp.send(apiError("Order not found"));
-                     
-            resp.send(apiSuccess(`Order status updated to ${order_status}`));
-        }
-    );
-});
-
-
-// ----------------------- EMPLOYEE DETAILS -----------------------
-
-// GET /admin/employees - Get all active employees
-router.get("/employees", adminAuth, (req, res) => {
-    const query = `
-        SELECT 
-            user_id,
-            name,
-            email,
-            phone,
-            User_role,
-            created_at
-        FROM users 
-        WHERE User_role IN ('EMPLOYEE', 'ADMIN') AND is_active = 1
-        ORDER BY name
-    `;
-    
-    db.query(query, (err, results) => {
-        if (err) {
-            return res.send(apiError(err.message));
-        }
-        res.send(apiSuccess(results));
-    });
-});
-
-
-// GET /admin/employees/inactive - Get inactive employees
-router.get("/employees/inactive", adminAuth, (req, res) => {
-    const query = `
-        SELECT 
-            user_id,
-            name,
-            email,
-            phone,
-            User_role,
-            created_at
-        FROM users 
-        WHERE User_role IN ('EMPLOYEE', 'ADMIN') AND is_active = 0
-        ORDER BY name
-    `;
-    
-    db.query(query, (err, results) => {
-        if (err) {
-            return res.send(apiError(err.message));
-        }
-        res.send(apiSuccess(results));
-    });
-});
-
-
-// PATCH /admin/employees/:id/toggle - Activate/Deactivate employee
-router.patch("/employees/:email/toggle", adminAuth, (req, res) => {
-    // const userId = req.params.user_id;
-    const user_email = req.params.email;
-    const isActive = req.body.is_active; // should be 1 or 0
-    
-    const query = "UPDATE users SET is_active = ? WHERE email = ? AND User_role = 'EMPLOYEE'";
-    
-    // db.query(query, [isActive, userId], (err, result) => {
-    db.query(query, [isActive, user_email],
-        (err, results) => {
-            if (err)
-                return res.send(apiError(err.message))
-            
-            if (results.affectedRows !== 1)
-                return res.send(apiError("User not found"))
-        const message = isActive ? "Employee activated" : "Employee deactivated";
-        res.send(apiSuccess({ message: message }));
-    });
-});
-
-// PATCH /users/role/:user_id - Change user role (Admin only)
-router.patch("/role/:user_id",adminAuth, (req, resp) => {
-    const {role} = req.body
-    const userId = req.params.user_id
-    
-    if(!role || !['ADMIN', 'CUSTOMER'].includes(role)) {
-        return resp.send(apiError("Valid role (ADMIN or CUSTOMER) is required"))
-    }
-    
-    db.query("UPDATE users SET User_role=? WHERE user_id=?", [role, userId],
-        (err, result) => {
-            if(err)
-                return resp.send(apiError(err.message))
-            
-            if(result.affectedRows !== 1)
-                return resp.send(apiError("User not found"))
-            
-            resp.send(apiSuccess(`User role updated to ${role} successfully`))
-        }
-    )
-})
-
-// ----------------------- CUSTOMERS DETAILS -----------------------
-
-// GET /admin/customers - Get all customers
-router.get("/customers", adminAuth, (req, res) => {
-    const query = `
-        SELECT 
-            user_id,
-            name,
-            email,
-            phone,
-            created_at,
-            is_active
-        FROM users 
-        WHERE User_role = 'CUSTOMER'
-        ORDER BY created_at DESC
-    `;
-    
-    db.query(query, (err, results) => {
-        if (err) {
-            return res.send(apiError(err.message));
-        }
-        res.send(apiSuccess(results));
-    });
-});
-
-
-// GET /users/all - Get all users for admin
-router.get("/all/users",adminAuth, (req, resp) => {
-   
-    db.query("SELECT user_id, name, email, phone, User_role, is_active, created_at FROM users ORDER BY created_at DESC",
-        (err, results) => {
-            if(err)
-                return resp.send(apiError(err.message))
-            return resp.send(apiSuccess(results))
-        }
-    )
-})
-
-
 //------------------------ USER_LOGS DETAILS ---------------------------------
 
 // GET /admin/logs - Get all user activity logs
-router.get("/logs", adminAuth, (req, res) => {
+router.get("/logs",/*  adminAuth,  */ (req, res) => {
     const query = `
         SELECT 
             ul.log_id,
@@ -334,9 +286,8 @@ router.get("/logs", adminAuth, (req, res) => {
     });
 });
 
-
 // GET /admin/logs/user/:user_id - Get logs for specific user
-router.get("/logs/user/:user_id", adminAuth, (req, res) => {
+router.get("/logs/user/:user_id",/* adminAuth,  */ (req, res) => {
     const user_id = req.params.user_id;
     
     const query = `
@@ -347,7 +298,8 @@ router.get("/logs/user/:user_id", adminAuth, (req, res) => {
             ul.ip_address,
             ul.created_at as log_time,
             u.name as user_name,
-            u.email as user_email
+            u.email as user_email,
+            u.User_role as user_role
         FROM user_logs ul
         JOIN users u ON ul.user_id = u.user_id
         WHERE ul.user_id = ?
@@ -363,15 +315,15 @@ router.get("/logs/user/:user_id", adminAuth, (req, res) => {
     });
 });
 
-
 // GET /admin/logs/today - Get today's activity logs
-router.get("/logs/today", adminAuth, (req, res) => {
+router.get("/logs/today",/*  adminAuth, */  (req, res) => {
     const query = `
         SELECT 
             ul.log_id,
             ul.user_id,
             u.name as user_name,
             u.email as user_email,
+            u.User_role as user_role,
             ul.action_type,
             ul.action_details,
             ul.ip_address,
@@ -390,8 +342,5 @@ router.get("/logs/today", adminAuth, (req, res) => {
     });
 });
 
-
-
 module.exports = router;
-
 

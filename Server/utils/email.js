@@ -4,11 +4,10 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: process.env.EMAIL_USER || 'gennugennie@gmail.com',
-        pass: process.env.EMAIL_PASS || 'cqjw yrme kbqu tbhm'
+        user: process.env.EMAIL_USER || 'shopeases2@gmail.com',
+        pass: process.env.EMAIL_PASS || 'xzvn yloi eupv invd'
     }
 });
-
 // Utility function to generate OTP
 function generateOTP() {
     return Math.floor(1000 + Math.random() * 9000).toString();

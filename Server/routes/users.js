@@ -367,7 +367,7 @@ router.patch("/activate/:email", userOrAdminAuth, async (req, res) => {
 });
 
 // PATCH Routes -> to change user password
-router.patch("/changepassword", userOrAdminAuth, (req, res) => {
+router.patch("/changepassword", /*userOrAdminAuth,*/ (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.id;
     const userIP = getUserIP(req);

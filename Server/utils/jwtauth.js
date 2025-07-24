@@ -8,8 +8,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "GroceryStoreManagementSystem"
 function createToken(user) {
     const payload = { 
         id: user.id, 
-        role: user.role,
-        email: user.email
+        email: user.email,
+        role: user.role || user.User_role ||  user.User.role
     }
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" })
     return token
@@ -30,11 +30,14 @@ function verifyToken(token) {
 function jwtAuth(req, resp, next) {
     // URLs that don't require authentication
     const nonProtectedUrls = [
-        "/users/signin", 
+        "/users/signin",
+        "/users/adminsignin", 
         "/users/signup",
         "/users/forgot-password",
         "/users/verify-otp",
-        "/users/reset-password"
+        "/users/reset-password",
+        "/category",
+        "/product"
      ]
     
     // Check if current URL is in non-protected list
@@ -55,7 +58,7 @@ function jwtAuth(req, resp, next) {
     
     // Extract token from "Bearer <token>" format
     const authHeader = req.headers.authorization
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader
+    const token = authHeader.startsWith('Bearer') ? authHeader.slice(7) : authHeader
     
     // Verify the token
     const decoded = verifyToken(token)
@@ -71,7 +74,7 @@ function jwtAuth(req, resp, next) {
     // Add user info to request object
     req.user = { 
         id: decoded.id, 
-        role: decoded.role,
+        User_role: decoded.role,
         email: decoded.email
     }
     
@@ -80,7 +83,7 @@ function jwtAuth(req, resp, next) {
 
 // Admin-only middleware
 function adminAuth(req, resp, next) {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.users || req.users.User_role !=='ADMIN' || req.user.role !== 'ADMIN') {
         return resp.status(403).json({
             status: "error",
             message: "Access denied. Admin privileges required."
@@ -118,5 +121,4 @@ module.exports = {
     adminAuth,
     userOrAdminAuth
 }
-
 

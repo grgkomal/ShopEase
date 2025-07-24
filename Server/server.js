@@ -12,6 +12,9 @@ const notificationsRouter = require("./routes/notifications");
 
 const { jwtAuth } = require("./utils/jwtauth");
 
+const cors = require('cors');
+app.use(cors());
+  
 app.use(express.json());
 app.use(jwtAuth);
 app.use("/users", userRouter);

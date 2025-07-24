@@ -37,12 +37,20 @@ const LoginScreen = ({ navigation }) => {
       
        const result = await login(email, password);
       if (result['status'] == 'success') {
-        setSnackbarMessage(result.message || 'Login ');
-        setSnackbarVisible(true);
+         setSnackbarMessage(result.message || 'Login ');
+      setSnackbarVisible(true);
+
+        // read  all the properties
         const { token, name, email, phone, user_id } = result['data']
+
+        // cache the basic user properties
         setCache(token, name, email, phone, user_id)
-        navigation.replace('Account')
+
+        // go to the main screen (bottom tab navigation)
+        navigation.replace('Home')
       } else {
+        // ToastAndroid.show(result['error'], ToastAndroid.SHORT)
+
       setSnackbarMessage(result.message || 'Login failed');
       setSnackbarVisible(true);
       }

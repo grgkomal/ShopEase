@@ -12,6 +12,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import AccountScreen from './src/screens/AccountScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import ProductCategory from './src/screens/ProductDetailScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -51,6 +52,11 @@ export default function App() {
               title: 'ShopEase',
               headerShown: false
             }}
+          />
+          <Stack.Screen 
+            name="ProductCategory" 
+            component={ProductCategory} 
+            options={{ title: 'ProductCategory' }}
           />
 
           <Stack.Screen 
