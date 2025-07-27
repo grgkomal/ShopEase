@@ -15,6 +15,7 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import ProductCategory from './src/screens/ProductDetailScreen';
 import DeliveryAddressScreen from './src/screens/addressScreen';
 import CartScreen from './src/screens/CartScreen';
+import OrderScreen from './src/screens/OrderScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -73,6 +74,13 @@ export default function App() {
             component={CartScreen} 
             options={{ title: 'Cart' }}
           />
+
+          <Stack.Screen 
+            name="Order" 
+            component={OrderScreen} 
+            options={{ title: 'Order' }}
+          />
+
 
           <Stack.Screen 
             name="Account" 

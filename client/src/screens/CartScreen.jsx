@@ -280,7 +280,7 @@ const CartScreen = ({ navigation }) => {
         setSelectedAddress(null);
         fetchCart();
         setTimeout(() => {
-        Alert.alert("Your order has been placed")
+        navigation.navigate('Order');
         }, 2000);
       } else {
         const errorMessage = result?.message || result?.error || 'Failed to place order';
