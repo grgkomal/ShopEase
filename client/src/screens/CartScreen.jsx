@@ -1,19 +1,14 @@
 // src/screens/CartScreen.jsx
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, Image, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, Image, RefreshControl, Dimensions } from 'react-native';
 import {
   Text,
-  TextInput,
   Button,
-  Card,
-  Title,
   Snackbar,
-  HelperText,
   Dialog,
   Portal,
   ActivityIndicator,
   FAB,
-  List,
   IconButton,
   Divider,
   Chip,
@@ -28,13 +23,14 @@ import {
   removeCartItem, 
   clearCart, 
   createOrder,
-  addToCart, 
   clearCartWithApi
 } from '../services/cart';
 import { getAddresses } from '../services/address';
 import { getCache } from '../utils/auth';
-import { styles } from '../theme/styles';
 import { theme } from '../theme/theme';
+import BottomNavigation from '../navigation/BottomNavigation';
+
+const { width } = Dimensions.get('window');
 
 const CartScreen = ({ navigation }) => {
   const [cartData, setCartData] = useState({
@@ -97,6 +93,7 @@ const CartScreen = ({ navigation }) => {
       setRefreshing(false);
     }
   };
+
   const fetchAddresses = async () => {
     try {
       console.log('Fetching delivery addresses...');
@@ -308,29 +305,31 @@ const CartScreen = ({ navigation }) => {
   const formatAddress = (address) => {
     return `${address.building}, ${address.area}, ${address.pincode}`;
   };
+
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: '#f5f5f5' }]}>
-        <View style={styles.centeredContainer}>
-          <ActivityIndicator animating={true} size="large" color={theme.colors.primary} />
-          <Text style={{ marginTop: 16, color: theme.colors.text }}>Loading cart...</Text>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator animating={true} size="large" color={theme?.colors?.primary || '#4CAF50'} />
+          <Text style={styles.loadingText}>Loading cart...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#f5f5f5' }]}>
-      <View style={cartStyles.headerContainer}>
-        <View style={cartStyles.headerLeft}>
+    <SafeAreaView style={styles.container}>
+
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
           <IconButton
             icon="arrow-left"
             size={24}
             iconColor="#fff"
             onPress={() => navigation.goBack()}
-            style={cartStyles.backButton}
+            style={styles.backButton}
           />
-          <Text style={cartStyles.headerTitle}>Cart</Text>
+          <Text style={styles.headerTitle}>Cart</Text>
         </View>
         <Button
           mode="text"
@@ -338,134 +337,160 @@ const CartScreen = ({ navigation }) => {
           loading={refreshing}
           disabled={submitLoading}
           textColor="#fff"
-          style={cartStyles.refreshButton}
+          style={styles.refreshButton}
         >
           Refresh
         </Button>
       </View>
 
       <ScrollView 
-        style={cartStyles.scrollContainer}
-        contentContainerStyle={cartStyles.scrollContent}
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
+            colors={[theme?.colors?.primary || '#4CAF50']}
           />
         }
       >
-        <View style={cartStyles.titleContainer}>
-          <Text style={cartStyles.shoppingCartTitle}>Shopping Cart</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.pageTitle}>Shopping Cart</Text>
           {cartData.item_count > 0 && (
-            <Badge size={20} style={cartStyles.itemBadge}>
+            <Badge size={20} style={styles.itemBadge}>
               {cartData.item_count}
             </Badge>
           )}
         </View>
+
         {cartData.cart_items.length === 0 ? (
-          <View style={cartStyles.emptyCartContainer}>
-            <Text style={cartStyles.emptyCartText}>Your cart is empty</Text>
-            <Text style={cartStyles.emptyCartSubText}>Add some products to get started</Text>
+          <View style={styles.emptyCartContainer}>
+            <Text style={styles.emptyCartTitle}>Your cart is empty</Text>
+            <Text style={styles.emptyCartSubtitle}>Add some products to get started</Text>
             <Button 
               mode="contained" 
               onPress={() => navigation.navigate('Home')}
-              style={cartStyles.continueShoppingButton}
+              style={styles.continueShoppingButton}
             >
               Continue Shopping
             </Button>
           </View>
         ) : (
           <>
-            <View style={cartStyles.cartItemsContainer}>
+            <View style={styles.cartItemsContainer}>
               {cartData.cart_items.map((item, index) => (
-                <View key={item.cart_id || index} style={cartStyles.cartItem}>
-                  <View style={cartStyles.productImageContainer}>
+                <View key={item.cart_id || index} style={styles.cartItem}>
+
+                  <View style={styles.productImageContainer}>
                     {item.image_url ? (
                       <Image 
                         source={{ uri: item.image_url }} 
-                        style={cartStyles.productImage}
+                        style={styles.productImage}
                         resizeMode="cover"
                       />
                     ) : (
-                      <View style={cartStyles.placeholderImage}>
-                        <Text style={cartStyles.placeholderText}>No Image</Text>
+                      <View style={styles.placeholderImage}>
+                        <Text style={styles.placeholderText}>No Image</Text>
                       </View>
                     )}
                   </View>
-                  <View style={cartStyles.productDetails}>
-                    <Text style={cartStyles.productName}>{item.product_name}</Text>
-                    <Text style={cartStyles.productPrice}>{formatPrice(item.price)} each</Text>
-                    <Text style={cartStyles.stockInfo}>Available: {item.available_quantity}</Text>
-                    <View style={cartStyles.quantityRow}>
-                      <View style={cartStyles.quantityControls}>
+
+                  <View style={styles.productDetails}>
+                    <Text style={styles.productName} numberOfLines={2}>
+                      {item.product_name}
+                    </Text>
+                    <Text style={styles.productPrice}>
+                      {formatPrice(item.price)} each
+                    </Text>
+                    <Text style={styles.stockInfo}>
+                      Available: {item.available_quantity}
+                    </Text>
+
+                    <View style={styles.quantityRow}>
+                      <View style={styles.quantityControls}>
                         <IconButton
                           icon="minus"
                           size={16}
                           onPress={() => handleQuantityChange(item, item.quantity - 1)}
                           disabled={submitLoading || item.quantity <= 1}
-                          style={cartStyles.quantityButton}
+                          style={styles.quantityButton}
                           iconColor="#666"
                         />
-                        <Text style={cartStyles.quantityText}>{item.quantity}</Text>
+                        <Text style={styles.quantityText}>{item.quantity}</Text>
                         <IconButton
                           icon="plus"
                           size={16}
                           onPress={() => handleQuantityChange(item, item.quantity + 1)}
                           disabled={submitLoading || item.quantity >= item.available_quantity}
-                          style={cartStyles.quantityButton}
+                          style={styles.quantityButton}
                           iconColor="#666"
                         />
                       </View>
-                      <Text style={cartStyles.itemTotal}>Total: {formatPrice(item.item_total)}</Text>
+                      <Text style={styles.itemTotal}>
+                        Total: {formatPrice(item.item_total)}
+                      </Text>
                     </View>
                   </View>
+
                   <IconButton
                     icon="delete"
                     size={20}
                     iconColor="#ff4444"
                     onPress={() => handleDeleteItem(item)}
                     disabled={submitLoading}
-                    style={cartStyles.deleteButton}
+                    style={styles.deleteButton}
                   />
                 </View>
               ))}
             </View>
-            <View style={cartStyles.summaryContainer}>
-              <Text style={cartStyles.summaryTitle}>Order Summary</Text>
-              <Divider style={cartStyles.divider} />              
-              <View style={cartStyles.summaryRow}>
-                <Text style={cartStyles.summaryLabel}>Items ({cartData.item_count})</Text>
-                <Text style={cartStyles.summaryValue}>{formatPrice(cartData.total_amount)}</Text>
-              </View>              
-              <View style={cartStyles.summaryRow}>
-                <Text style={cartStyles.summaryLabel}>Delivery</Text>
-                <Text style={cartStyles.summaryValue}>Free</Text>
-              </View>             
-              <Divider style={cartStyles.divider} />             
-              <View style={cartStyles.totalRow}>
-                <Text style={cartStyles.totalLabel}>Total</Text>
-                <Text style={cartStyles.totalValue}>{formatPrice(cartData.total_amount)}</Text>
+
+            <View style={styles.summaryContainer}>
+              <Text style={styles.summaryTitle}>Order Summary</Text>
+              <Divider style={styles.divider} />
+              
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>
+                  Items ({cartData.item_count})
+                </Text>
+                <Text style={styles.summaryValue}>
+                  {formatPrice(cartData.total_amount)}
+                </Text>
+              </View>
+              
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Delivery</Text>
+                <Text style={styles.summaryValue}>Free</Text>
+              </View>
+              
+              <Divider style={styles.divider} />
+              
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalValue}>
+                  {formatPrice(cartData.total_amount)}
+                </Text>
               </View>
             </View>
-            <View style={cartStyles.actionButtonsContainer}>
+
+            <View style={styles.actionButtonsContainer}>
               <Button
                 mode="outlined"
                 onPress={handleClearCart}
                 disabled={submitLoading}
-                style={cartStyles.clearButton}
+                style={styles.clearButton}
                 buttonColor="#ffe6e6"
                 textColor="#ff4444"
               >
                 Clear Cart
-              </Button>             
+              </Button>
+              
               <Button
                 mode="contained"
                 onPress={handlePlaceOrder}
                 disabled={submitLoading}
                 loading={submitLoading}
-                style={cartStyles.orderButton}
+                style={styles.orderButton}
                 buttonColor="#4CAF50"
               >
                 Place Order
@@ -473,11 +498,13 @@ const CartScreen = ({ navigation }) => {
             </View>
           </>
         )}
-        <View style={{ height: 80 }} />
+
+        <View style={styles.bottomSpacing} />
       </ScrollView>
+
       {cartData.cart_items.length > 0 && (
         <FAB
-          style={cartStyles.fab}
+          style={styles.fab}
           icon="plus"
           label="Add More"
           onPress={() => navigation.navigate('Home')}
@@ -511,13 +538,14 @@ const CartScreen = ({ navigation }) => {
               onPress={confirmDeleteItem}
               loading={submitLoading}
               disabled={submitLoading}
-              textColor={theme.colors.error}
+              textColor={theme?.colors?.error || '#f44336'}
             >
               Remove
             </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
       <Portal>
         <Dialog visible={clearCartDialogVisible} onDismiss={() => setClearCartDialogVisible(false)}>
           <Dialog.Title>Clear Cart</Dialog.Title>
@@ -535,36 +563,38 @@ const CartScreen = ({ navigation }) => {
               onPress={confirmClearCart}
               loading={submitLoading}
               disabled={submitLoading}
-              textColor={theme.colors.error}
+              textColor={theme?.colors?.error || '#f44336'}
             >
               Clear All
             </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
       <Portal>
         <Dialog visible={orderDialogVisible} onDismiss={() => setOrderDialogVisible(false)}>
           <Dialog.Title>Place Order</Dialog.Title>
           <Dialog.Content>
-            <Text style={cartStyles.dialogTitle}>Select Delivery Address:</Text>        
+            <Text style={styles.dialogSectionTitle}>Select Delivery Address:</Text>
+            
             {addresses.length === 0 ? (
-              <View style={cartStyles.noAddressContainer}>
-                <Text style={cartStyles.noAddressText}>No delivery addresses found</Text>
+              <View style={styles.noAddressContainer}>
+                <Text style={styles.noAddressText}>No delivery addresses found</Text>
                 <Button 
                   mode="outlined" 
                   onPress={() => {
                     setOrderDialogVisible(false);
                     navigation.navigate('Location');
                   }}
-                  style={cartStyles.addAddressButton}
+                  style={styles.addAddressButton}
                 >
                   Add Address
                 </Button>
               </View>
             ) : (
-              <ScrollView style={cartStyles.addressList}>
+              <ScrollView style={styles.addressList}>
                 {addresses.map((address) => (
-                  <Surface key={address.address_id} style={cartStyles.addressItem}>
+                  <Surface key={address.address_id} style={styles.addressItem}>
                     <RadioButton.Group
                       onValueChange={(value) => setSelectedAddress(JSON.parse(value))}
                       value={selectedAddress ? JSON.stringify(selectedAddress) : ''}
@@ -572,25 +602,27 @@ const CartScreen = ({ navigation }) => {
                       <RadioButton.Item
                         label={formatAddress(address)}
                         value={JSON.stringify(address)}
-                        style={cartStyles.radioItem}
+                        style={styles.radioItem}
                       />
                     </RadioButton.Group>
                     {address.is_default && (
-                      <Chip style={cartStyles.defaultChip} compact>Default</Chip>
+                      <Chip style={styles.defaultChip} compact>
+                        Default
+                      </Chip>
                     )}
                   </Surface>
                 ))}
               </ScrollView>
             )}
 
-            <Divider style={cartStyles.dialogDivider} />
+            <Divider style={styles.dialogDivider} />
             
-            <View style={cartStyles.orderSummaryInDialog}>
-              <Text style={cartStyles.orderSummaryTitle}>Order Summary:</Text>
-              <Text style={cartStyles.orderSummaryText}>
+            <View style={styles.orderSummaryDialog}>
+              <Text style={styles.orderSummaryTitle}>Order Summary:</Text>
+              <Text style={styles.orderSummaryText}>
                 Items: {cartData.item_count} | Total: {formatPrice(cartData.total_amount)}
               </Text>
-              <Text style={cartStyles.paymentMethod}>Payment: Cash on Delivery</Text>
+              <Text style={styles.paymentMethodText}>Payment: Cash on Delivery</Text>
             </View>
           </Dialog.Content>
           <Dialog.Actions>
@@ -621,13 +653,29 @@ const CartScreen = ({ navigation }) => {
         style={styles.snackbar}
       >
         {snackbarMessage}
-      </Snackbar>     
+      </Snackbar>
+      <BottomNavigation navigation={navigation} activeRoute="Cart" />
     </SafeAreaView>
   );
 };
 
-const cartStyles = StyleSheet.create({
-  headerContainer: {
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -661,6 +709,7 @@ const cartStyles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 100,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -668,7 +717,7 @@ const cartStyles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  shoppingCartTitle: {
+  pageTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
@@ -677,32 +726,36 @@ const cartStyles = StyleSheet.create({
     backgroundColor: '#4CAF50',
   },
   emptyCartContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fff',  
     borderRadius: 12,
-    padding: 32,
+    padding: 40,
     alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+    marginTop: 50,
   },
-  emptyCartText: {
-    fontSize: 18,
+  emptyCartTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
     color: '#333',
     marginBottom: 8,
   },
-  emptyCartSubText: {
-    fontSize: 14,
+  emptyCartSubtitle: {
+    fontSize: 16,
     textAlign: 'center',
     color: '#666',
     marginBottom: 24,
+    lineHeight: 22,
   },
   continueShoppingButton: {
     marginTop: 16,
     backgroundColor: '#4CAF50',
+    borderRadius: 25,
+    paddingHorizontal: 24,
   },
   cartItemsContainer: {
     marginBottom: 20,
@@ -721,8 +774,8 @@ const cartStyles = StyleSheet.create({
     shadowRadius: 2,
   },
   productImageContainer: {
-    width: 60,
-    height: 60,
+    width: 70,
+    height: 70,
     borderRadius: 8,
     overflow: 'hidden',
     marginRight: 12,
@@ -752,6 +805,7 @@ const cartStyles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 4,
+    lineHeight: 20,
   },
   productPrice: {
     fontSize: 14,
@@ -768,6 +822,7 @@ const cartStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 4,
   },
   quantityControls: {
     flexDirection: 'row',
@@ -800,7 +855,7 @@ const cartStyles = StyleSheet.create({
     height: 40,
   },
   summaryContainer: {
-    backgroundColor: '#f8f4ff',
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -809,6 +864,8 @@ const cartStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
   },
   summaryTitle: {
     fontSize: 18,
@@ -818,7 +875,7 @@ const cartStyles = StyleSheet.create({
   },
   divider: {
     marginVertical: 8,
-    backgroundColor: '#ddd',
+    backgroundColor: '#e0e0e0',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -842,12 +899,12 @@ const cartStyles = StyleSheet.create({
     paddingVertical: 8,
   },
   totalLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
   },
   totalValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#4CAF50',
   },
@@ -860,6 +917,7 @@ const cartStyles = StyleSheet.create({
     flex: 1,
     borderColor: '#ff4444',
     borderRadius: 25,
+    borderWidth: 1,
   },
   orderButton: {
     flex: 2,
@@ -869,10 +927,11 @@ const cartStyles = StyleSheet.create({
     position: 'absolute',
     margin: 16,
     right: 0,
-    bottom: 0,
+    bottom: 80,
     borderRadius: 28,
+    elevation: 8,
   },
-  dialogTitle: {
+  dialogSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
@@ -886,9 +945,11 @@ const cartStyles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 12,
+    textAlign: 'center',
   },
   addAddressButton: {
     marginTop: 8,
+    borderRadius: 20,
   },
   addressList: {
     maxHeight: 200,
@@ -897,9 +958,12 @@ const cartStyles = StyleSheet.create({
     marginVertical: 4,
     borderRadius: 8,
     elevation: 1,
+    backgroundColor: '#fff',
+    position: 'relative',
   },
   radioItem: {
     paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   defaultChip: {
     position: 'absolute',
@@ -909,11 +973,14 @@ const cartStyles = StyleSheet.create({
   },
   dialogDivider: {
     marginVertical: 16,
+    backgroundColor: '#e0e0e0',
   },
-  orderSummaryInDialog: {
-    backgroundColor: '#f5f5f5',
+  orderSummaryDialog: {
+    backgroundColor: '#f8f9fa',
     padding: 12,
     borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
   },
   orderSummaryTitle: {
     fontSize: 14,
@@ -925,11 +992,20 @@ const cartStyles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 4,
+    lineHeight: 18,
   },
-  paymentMethod: {
+  paymentMethodText: {
     fontSize: 12,
     color: '#4CAF50',
     fontWeight: '500',
+  },
+  snackbar: {
+    backgroundColor: '#333',
+    borderRadius: 8,
+    margin: 16,
+  },
+  bottomSpacing: {
+    height: 80,
   },
 });
 

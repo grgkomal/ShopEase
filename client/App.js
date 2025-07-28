@@ -19,6 +19,7 @@ import OrderScreen from './src/screens/OrderScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import VerifyOTPScreen from './src/screens/verifyOTPScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
+import ProductScreen from './src/screens/ProductScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -84,6 +85,12 @@ export default function App() {
             options={{ title: 'Location' }}
           />
           
+          <Stack.Screen 
+            name="Products" 
+            component={ProductScreen} 
+            options={{ title: 'Products' }}
+          />
+
           <Stack.Screen 
             name="ProductCategory" 
             component={ProductCategory} 

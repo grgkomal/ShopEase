@@ -12,6 +12,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { getAllCategories } from '../services/category';
 import { config } from '../configuration/config';
 import { getCache } from '../utils/auth';
+import BottomNavigation from '../navigation/BottomNavigation';
 
 const { width } = Dimensions.get('window');
 
@@ -204,6 +205,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
+      <BottomNavigation navigation={navigation} activeRoute="Home" />
     </SafeAreaView>
   );
 };

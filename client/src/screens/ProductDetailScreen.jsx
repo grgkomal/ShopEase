@@ -29,6 +29,7 @@ import { addToCart } from '../services/cart';
 import { config } from '../configuration/config';
 import { getCache } from '../utils/auth';
 import { theme } from '../theme/theme';
+import BottomNavigation from '../navigation/BottomNavigation';
 
 const ProductCategory = ({ route, navigation }) => {
   const { categoryId, categoryName, searchQuery } = route.params || {};
@@ -630,6 +631,7 @@ const ProductCategory = ({ route, navigation }) => {
       />
       {renderProductDetails()}
 
+      <BottomNavigation navigation={navigation} activeRoute="Products" />
     </SafeAreaView>
   );
 };

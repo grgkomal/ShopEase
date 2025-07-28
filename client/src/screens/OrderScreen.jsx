@@ -31,6 +31,7 @@ import { getCache } from '../utils/auth';
 import { styles } from '../theme/styles';
 import { theme } from '../theme/theme';
 import { useFocusEffect } from '@react-navigation/native';
+import BottomNavigation from '../navigation/BottomNavigation';
 
 const OrderScreen = ({ navigation }) => {
   const [orders, setOrders] = useState([]);
@@ -433,11 +434,11 @@ const OrderScreen = ({ navigation }) => {
         {snackbarMessage}
       </Snackbar>
    
+      <BottomNavigation navigation={navigation} activeRoute="Order" />
     </SafeAreaView>
   );
 };
 
-// Specific styles for order screen
 const orderStyles = StyleSheet.create({
   orderCard: {
     marginBottom: 12,
