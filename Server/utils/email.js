@@ -5,7 +5,7 @@ const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER || 'shopeases2@gmail.com',
-        pass: process.env.EMAIL_PASS || 'xzvn yloi eupv invd'
+        pass: process.env.EMAIL_PASS || 'gbdn pfot taib lqzz'
     }
 });
 // Utility function to generate OTP
@@ -17,7 +17,7 @@ function generateOTP() {
 async function sendEmail(to, subject, text, html) {
     try {
         const mailOptions = {
-            from: process.env.EMAIL_USER || 'gennugennie@gmail.com',
+            from: process.env.EMAIL_USER || 'shopeases2@gmail.com',
             to,
             subject,
             text,
