@@ -9,7 +9,7 @@ const SplashScreen = ({ navigation }) => {
 
   useEffect(() => {
     const init = async () => {
-      const cached = await getCache();  // await the stored data
+      const cached = await getCache(); 
       const token = cached?.token;
       const nextScreen = token ? 'Home' : 'Login';
       

@@ -20,7 +20,6 @@ export async function getAllProducts() {
     const data = await response.json();
     console.log('All Products API Response:', data);
     
-    // Return the actual response structure from API
     return data;
   } catch (error) {
     console.error('Error fetching all products:', error);
@@ -49,7 +48,6 @@ export async function getProductsByCategory(category_id) {
     const data = await response.json();
     console.log('Products by Category API Response:', data);
     
-    // Return the actual response structure from API
     return data;
   } catch (error) {
     console.error('Error fetching products by category:', error);
@@ -78,7 +76,6 @@ export async function getProductById(product_id) {
     const data = await response.json();
     console.log('Product by ID API Response:', data);
     
-    // Return the actual response structure from API
     return data;
   } catch (error) {
     console.error('Error fetching product by ID:', error);

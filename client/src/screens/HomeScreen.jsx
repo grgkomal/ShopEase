@@ -144,7 +144,6 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerRightStack}>
           <Text style={styles.appName}>ShopEase</Text>
@@ -153,11 +152,9 @@ const HomeScreen = ({ navigation }) => {
           </View>
           <TouchableOpacity style={styles.accountButton} onPress={() => navigation.navigate('Account')}>
             <Icon name="account-circle" size={30} color="#4CAF50" />
-          </TouchableOpacity>
-          
+          </TouchableOpacity>       
       </View>
 
-      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Icon name="search" size={20} color="#666" style={styles.searchIcon} />
@@ -180,7 +177,6 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Categories Grid */}
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}

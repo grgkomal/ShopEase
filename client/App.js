@@ -16,6 +16,9 @@ import ProductCategory from './src/screens/ProductDetailScreen';
 import DeliveryAddressScreen from './src/screens/addressScreen';
 import CartScreen from './src/screens/CartScreen';
 import OrderScreen from './src/screens/OrderScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import VerifyOTPScreen from './src/screens/verifyOTPScreen';
+import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -48,6 +51,24 @@ export default function App() {
             component={RegisterScreen} 
             options={{ title: 'Register' }}
           />
+           <Stack.Screen 
+            name="ForgotPassword" 
+            component={ForgotPasswordScreen} 
+            options={{ title: 'Forgot Password' }}
+          />
+
+          <Stack.Screen 
+            name="VerifyOTP" 
+            component={VerifyOTPScreen} 
+            options={{ title: 'Verify OTP' }}
+          />
+
+          <Stack.Screen 
+            name="ResetPassword" 
+            component={ResetPasswordScreen} 
+            options={{ title: 'ResetPasswordScreen' }}
+          />
+
           <Stack.Screen 
             name="Home" 
             component={HomeScreen} 
@@ -78,7 +99,9 @@ export default function App() {
           <Stack.Screen 
             name="Order" 
             component={OrderScreen} 
-            options={{ title: 'Order' }}
+            options={{ 
+              title: 'Order',
+              headerShown: false }}
           />
 
 
