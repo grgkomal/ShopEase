@@ -41,7 +41,7 @@ const LoginScreen = ({ navigation }) => {
          setSnackbarVisible(true);
          const { token, name, email, phone, user_id, User_role } = result['data']
          setCache(token, name, email, phone, user_id, User_role)
-         navigation.replace('Account')
+         navigation.replace('Order')
       }  else {
       setSnackbarMessage(result.message || 'Login failed');
       setSnackbarVisible(true);

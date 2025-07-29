@@ -4,14 +4,17 @@ import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { theme } from '../theme/theme';
 
-const navItems = [
-  { name: 'Home', icon: 'home', route: 'Home' },
-  { name: 'Products', icon: 'shopping-bag', route: 'Products' },
-  { name: 'Order', icon: 'receipt', route: 'Order' },
-  { name: 'Cart', icon: 'shopping-cart', route: 'Cart' },
-  { name: 'Account', icon: 'person', route: 'Account' },
-];
+  const navItems = [
+    { name: 'Order', icon: 'receipt', route: 'Order' },
+    // { name: 'Category', icon: 'category', route: 'Category' },
+    // { name: 'UserLogs', icon: 'logs', route: 'UserLogs' },
+    // { name: 'Employee', icon: 'employee', route: 'Employee' },
+    
+    // { name: 'Products', icon: 'shopping-cart', route: 'Products' },
+    { name: 'ShopEASE', route: 'Account' },
+  ];
 
+  
 const BottomNavigation = ({ navigation, activeRoute }) => {
   return (
     <View style={styles.bottomNavigation}>

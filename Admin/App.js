@@ -11,6 +11,7 @@ import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import AccountScreen from './src/screens/AccountScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import LoginScreen from './src/screens/LoginScreen';
+import AdminOrderScreen from './src/screens/AdminOrderScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -42,6 +43,12 @@ export default function App() {
             name="ForgotPassword" 
             component={ForgotPasswordScreen} 
             options={{ title: 'Forgot Password' }}
+          />
+
+          <Stack.Screen 
+            name="Order" 
+            component={AdminOrderScreen} 
+            options={{ title: 'Order' }}
           />
 
           <Stack.Screen 
