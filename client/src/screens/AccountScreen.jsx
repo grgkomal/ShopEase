@@ -49,8 +49,8 @@ const AccountScreen = ({ navigation }) => {
 
   const menuItems = [
     { title: 'My Profile', icon: '👤', onPress: () => navigation.navigate('Profile') },
-    { title: 'Order History', icon: '📦', onPress: () => Alert.alert('Coming Soon, Order History coming soon') },
-    { title: 'Addresses', icon: '📍', onPress: () => Alert.alert('Coming Soon, Address coming soon') },
+    { title: 'Order History', icon: '📦', onPress: () => navigation.navigate('Order')  },
+    { title: 'Addresses', icon: '📍', onPress: () => navigation.navigate('Location') },
     { title: 'Payment Methods', icon: '💳', onPress: () => Alert.alert('Coming Soon, CASH ON DELIVERY') },
     { title: 'Settings', icon: '⚙️', onPress: () => Alert.alert('Coming Soon, Settings coming soon!') },
     { title: 'Help & Support', icon: '❓', onPress: () => Alert.alert('Coming Soon, Help and Support coming soon!')},

@@ -100,15 +100,17 @@ export default function App() {
           <Stack.Screen 
             name="Cart" 
             component={CartScreen} 
-            options={{ title: 'Cart' }}
+            options={{ title: 'Cart',
+              headerShown: false
+             }}
           />
 
           <Stack.Screen 
             name="Order" 
             component={OrderScreen} 
             options={{ 
-              title: 'Order',
-              headerShown: false }}
+              title: 'Order'
+              }}
           />
 
 

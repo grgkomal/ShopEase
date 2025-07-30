@@ -7,7 +7,7 @@ import { theme } from '../theme/theme';
   const navItems = [
     { name: 'Order', icon: 'receipt', route: 'Order' },
     // { name: 'Category', icon: 'category', route: 'Category' },
-    // { name: 'UserLogs', icon: 'logs', route: 'UserLogs' },
+    { name: 'UserLogs', route: 'UserLogs' },
     // { name: 'Employee', icon: 'employee', route: 'Employee' },
     
     // { name: 'Products', icon: 'shopping-cart', route: 'Products' },

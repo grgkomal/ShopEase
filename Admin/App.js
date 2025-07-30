@@ -12,6 +12,7 @@ import AccountScreen from './src/screens/AccountScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import AdminOrderScreen from './src/screens/AdminOrderScreen';
+import AdminUserLogsScreen from './src/screens/AdminUserLogsScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -49,6 +50,12 @@ export default function App() {
             name="Order" 
             component={AdminOrderScreen} 
             options={{ title: 'Order' }}
+          />
+
+          <Stack.Screen 
+            name="UserLogs" 
+            component={AdminUserLogsScreen} 
+            options={{ title: 'User Activity Logs' }}
           />
 
           <Stack.Screen 

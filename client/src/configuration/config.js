@@ -1,5 +1,5 @@
 
 //configuration/config
 export const config = {
-  server: 'http://192.168.1.72:3000',
+  server: 'http://172.18.6.30:3000',
 }
