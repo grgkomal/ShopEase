@@ -1,6 +1,6 @@
 // src/screens/RegisterScreen.jsx
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { 
   Text, 
   TextInput, 
@@ -10,105 +10,80 @@ import {
   Snackbar
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { theme } from '../theme/theme';
-import { getCache } from '../utils/auth';
+import { signUp } from '../services/user';
 import { styles } from '../theme/styles';
 
 const RegisterScreen = ({ navigation }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-  });
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
 
-  const { register } = getCache();
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const validateForm = () => {
-    const { name, email, password, confirmPassword, phone } = formData;
-
-    if (!name.trim()) {
-      setSnackbarMessage('Please enter your full name');
-      return false;
-    }
-
-    if (!email.trim()) {
-      setSnackbarMessage('Please enter your email address');
-      return false;
-    }
-
-    if (!isValidEmail(email)) {
-      setSnackbarMessage('Please enter a valid email address');
-      return false;
-    }
-
-    if (!password) {
-      setSnackbarMessage('Please enter a password');
-      return false;
-    }
-
-    if (password.length < 6) {
-      setSnackbarMessage('Password must be at least 6 characters long');
-      return false;
-    }
-
-    if (password !== confirmPassword) {
-      setSnackbarMessage('Passwords do not match');
-      return false;
-    }
-
-    if (!phone.trim()) {
-      setSnackbarMessage('Please enter your phone number');
-      return false;
-    }
-
-    if (phone.length < 10) {
-      setSnackbarMessage('Please enter a valid phone number');
-      return false;
-    }
-
-    return true;
-  };
-
-  const isValidEmail = (email) => {
+  const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
+  const validatePhone = (phone) => {
+    const phoneRegex = /^[0-9]{10}$/;
+    return phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''));
+  };
+
   const handleRegister = async () => {
-    if (!validateForm()) {
+    // Validation
+    if (!name || !email || !phone || !password || !confirmPassword) {
+      setSnackbarMessage('Please fill in all fields');
+      setSnackbarVisible(true);
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setSnackbarMessage('Please enter a valid email address');
+      setSnackbarVisible(true);
+      return;
+    }
+
+    if (!validatePhone(phone)) {
+      setSnackbarMessage('Please enter a valid 10-digit phone number');
+      setSnackbarVisible(true);
+      return;
+    }
+
+    if (password.length < 6) {
+      setSnackbarMessage('Password must be at least 6 characters long');
+      setSnackbarVisible(true);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setSnackbarMessage('Passwords do not match');
       setSnackbarVisible(true);
       return;
     }
 
     setLoading(true);
-    try {
-      const userData = {
-        name: formData.name.trim(),
-        email: formData.email.toLowerCase().trim(),
-        password: formData.password,
-        phone: formData.phone.trim(),
-        User_role: 'customer',
-      };
 
-      const result = await register(userData);
+    try {
+      const result = await signUp(name, email, password, phone);
       
-      if (result.success) {
-        setSnackbarMessage('Registration successful! Please login to continue.');
+      if (result.status === 'success' || result.success === true) {
+        setSnackbarMessage('Registration successful! Please login.');
         setSnackbarVisible(true);
+        
+        // Clear form
+        setName('');
+        setEmail('');
+        setPhone('');
+        setPassword('');
+        setConfirmPassword('');
+        
+        // Navigate to login after a short delay
         setTimeout(() => {
           navigation.navigate('Login');
         }, 2000);
@@ -117,10 +92,12 @@ const RegisterScreen = ({ navigation }) => {
         setSnackbarVisible(true);
       }
     } catch (error) {
+      console.error('Registration error:', error);
       setSnackbarMessage('Registration failed. Please try again.');
       setSnackbarVisible(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const navigateToLogin = () => {
@@ -141,39 +118,40 @@ const RegisterScreen = ({ navigation }) => {
             
             <TextInput
               label="Full Name"
-              value={formData.name}
-              onChangeText={(value) => handleInputChange('name', value)}
+              value={name}
+              onChangeText={setName}
               mode="outlined"
               style={styles.input}
               left={<TextInput.Icon icon="account" />}
+              autoCapitalize="words"
             />
 
             <TextInput
               label="Email"
-              value={formData.email}
-              onChangeText={(value) => handleInputChange('email', value)}
+              value={email}
+              onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               mode="outlined"
               style={styles.input}
               left={<TextInput.Icon icon="email" />}
-              error={formData.email && !isValidEmail(formData.email)}
             />
 
             <TextInput
               label="Phone Number"
-              value={formData.phone}
-              onChangeText={(value) => handleInputChange('phone', value)}
+              value={phone}
+              onChangeText={setPhone}
               keyboardType="phone-pad"
               mode="outlined"
               style={styles.input}
               left={<TextInput.Icon icon="phone" />}
+              placeholder="10-digit phone number"
             />
 
             <TextInput
               label="Password"
-              value={formData.password}
-              onChangeText={(value) => handleInputChange('password', value)}
+              value={password}
+              onChangeText={setPassword}
               secureTextEntry={!showPassword}
               mode="outlined"
               style={styles.input}
@@ -188,8 +166,8 @@ const RegisterScreen = ({ navigation }) => {
 
             <TextInput
               label="Confirm Password"
-              value={formData.confirmPassword}
-              onChangeText={(value) => handleInputChange('confirmPassword', value)}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
               secureTextEntry={!showConfirmPassword}
               mode="outlined"
               style={styles.input}
@@ -200,13 +178,12 @@ const RegisterScreen = ({ navigation }) => {
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 />
               }
-              error={formData.confirmPassword && formData.password !== formData.confirmPassword}
             />
 
             <Button
               mode="contained"
               onPress={handleRegister}
-              style={styles.registerButton}
+              style={styles.loginButton}
               disabled={loading}
               loading={loading}
             >
@@ -215,12 +192,12 @@ const RegisterScreen = ({ navigation }) => {
           </Card.Content>
         </Card>
 
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Already have an account? </Text>
+        <View style={styles.registerContainer}>
+          <Text style={styles.registerText}>Already have an account? </Text>
           <Button
             mode="text"
             onPress={navigateToLogin}
-            style={styles.loginButton}
+            style={styles.registerButton}
           >
             Login
           </Button>
@@ -230,8 +207,8 @@ const RegisterScreen = ({ navigation }) => {
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
-        duration={300}
-        style={[styles.snackbar, { backgroundColor: snackbarMessage.includes('successful') ? theme.colors.primary : theme.colors.error }]}
+        duration={3000}
+        style={styles.snackbar}
       >
         {snackbarMessage}
       </Snackbar>
