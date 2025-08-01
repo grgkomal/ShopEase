@@ -467,6 +467,7 @@ const AdminUserLogsScreen = ({ navigation }) => {
 // Styles specific to user logs screen
 const userLogsStyles = StyleSheet.create({
   searchContainer: {
+    marginTop: 10,
     paddingHorizontal: 16,
     paddingBottom: 8,
   },

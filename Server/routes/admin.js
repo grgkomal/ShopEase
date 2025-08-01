@@ -342,5 +342,134 @@ router.get("/logs/today",/*  adminAuth, */  (req, res) => {
     });
 });
 
+// ----------------------- EMPLOYEE DETAILS -----------------------
+
+// GET /admin/employees - Get all active employees
+router.get("/employees", /* adminAuth, */ (req, res) => {
+    const query = `
+        SELECT 
+            user_id,
+            name,
+            email,
+            phone,
+            User_role,
+            created_at
+        FROM users 
+        WHERE User_role IN ('EMPLOYEE', 'ADMIN') AND is_active = 1
+        ORDER BY name
+    `;
+    
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.send(apiError(err.message));
+        }
+        res.send(apiSuccess(results));
+    });
+});
+
+
+// GET /admin/employees/inactive - Get inactive employees
+router.get("/employees/inactive", /* adminAuth, */ (req, res) => {
+    const query = `
+        SELECT 
+            user_id,
+            name,
+            email,
+            phone,
+            User_role,
+            created_at
+        FROM users 
+        WHERE User_role IN ('EMPLOYEE', 'ADMIN') AND is_active = 0
+        ORDER BY name
+    `;
+    
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.send(apiError(err.message));
+        }
+        res.send(apiSuccess(results));
+    });
+});
+
+
+// PATCH /admin/employees/:id/toggle - Activate/Deactivate employee
+router.patch("/employees/:email/toggle", /* adminAuth, */ (req, res) => {
+    const user_email = req.params.email;
+    const isActive = req.body.is_active;
+    
+    const query = "UPDATE users SET is_active = ? WHERE email = ? AND User_role = 'EMPLOYEE'";
+    
+    db.query(query, [isActive, user_email],
+        (err, results) => {
+            if (err)
+                return res.send(apiError(err.message))
+            
+            if (results.affectedRows !== 1)
+                return res.send(apiError("User not found"))
+        const message = isActive ? "Employee activated" : "Employee deactivated";
+        res.send(apiSuccess({ message: message }));
+    });
+});
+
+// PATCH /users/role/:user_id - Change user role (Admin only)
+router.patch("/role/:user_id",/* adminAuth, */ (req, resp) => {
+    const {role} = req.body
+    const userId = req.params.user_id
+    
+    // if(!role || !['ADMIN', 'CUSTOMER'].includes(role)) {
+    //     return resp.send(apiError("Valid role (ADMIN or CUSTOMER) is required"))
+    // }
+    
+    db.query("UPDATE users SET User_role=? WHERE user_id=?", [role, userId],
+        (err, result) => {
+            if(err)
+                return resp.send(apiError(err.message))
+            
+            if(result.affectedRows !== 1)
+                return resp.send(apiError("User not found"))
+            
+            resp.send(apiSuccess(`User role updated to ${role} successfully`))
+        }
+    )
+})
+
+// ----------------------- CUSTOMERS DETAILS -----------------------
+
+// GET /admin/customers - Get all customers
+router.get("/customers", /* adminAuth, */ (req, res) => {
+    const query = `
+        SELECT 
+            user_id,
+            name,
+            email,
+            phone,
+            created_at,
+            is_active
+        FROM users 
+        WHERE User_role = 'CUSTOMER'
+        ORDER BY created_at DESC
+    `;
+    
+    db.query(query, (err, results) => {
+        if (err) {
+            return res.send(apiError(err.message));
+        }
+        res.send(apiSuccess(results));
+    });
+});
+
+
+// GET /users/all - Get all users for admin
+router.get("/all/users",/* adminAuth, */ (req, resp) => {
+   
+    db.query("SELECT user_id, name, email, phone, User_role, is_active, created_at FROM users ORDER BY created_at DESC",
+        (err, results) => {
+            if(err)
+                return resp.send(apiError(err.message))
+            return resp.send(apiSuccess(results))
+        }
+    )
+})
+
 module.exports = router;
 

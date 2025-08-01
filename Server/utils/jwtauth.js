@@ -11,7 +11,8 @@ function createToken(user) {
         email: user.email,
         role: user.role || user.User_role ||  user.User.role
     }
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" })
+    const token = jwt.sign(payload, JWT_SECRET)
+    // const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" })
     return token
 }
 

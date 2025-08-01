@@ -5,12 +5,9 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { theme } from '../theme/theme';
 
   const navItems = [
-    { name: 'Order', icon: 'receipt', route: 'Order' },
-    // { name: 'Category', icon: 'category', route: 'Category' },
+    { name: 'Order', route: 'Order' },
     { name: 'UserLogs', route: 'UserLogs' },
-    // { name: 'Employee', icon: 'employee', route: 'Employee' },
-    
-    // { name: 'Products', icon: 'shopping-cart', route: 'Products' },
+    { name: 'Employee', route: 'Employee' },
     { name: 'ShopEASE', route: 'Account' },
   ];
 
@@ -77,7 +74,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primaryContainer,
   },
   navText: {
-    fontSize: 12,
+    fontSize: 15,
     color: theme.colors.onSurfaceVariant,
     marginTop: 4,
   },

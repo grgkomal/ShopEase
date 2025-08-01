@@ -118,7 +118,7 @@ router.get("/all/users", (req, resp) => {
 })
 
 // POST /users/signin
-router.post("/signin", (req, resp) => {
+router.post("/adminsignin", (req, resp) => {
     const {email, password} = req.body
     
     if(!email || !password) {
@@ -160,9 +160,9 @@ router.post("/signin", (req, resp) => {
         }
     )
 })
+ 
 
-
-// POST Routes  -> to sign in
+// POST Routes  -> to sign in as admin 
 router.post("/adminsignin", (req, res) => {
     const { email, password } = req.body;
     const userIP = getUserIP(req);
@@ -205,6 +205,7 @@ router.post("/adminsignin", (req, res) => {
         res.send(apiSuccess({ ...userWithoutPassword, token }));
     });
 });
+
 
 
 // POST /users/signup
