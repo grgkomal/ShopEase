@@ -165,14 +165,16 @@ router.delete("/:category_id", (req, resp) => {
   });
 });
 
-// Serve uploaded images
-router.get("/uploads/:image_url", (req, resp) => {
-  const filename = req.params.image_url;
-  const filePath = path.join(__dirname, "../uploads", filename);
-  if (!fs.existsSync(filePath)) {
-    return resp.status(404).send(apiError("Image not found"));
-  }
-  resp.sendFile(filePath);
+// GET /api/product/download/:filename - Download product image
+router.get("/download/:image_url", (req, resp) => {
+    const filename = req.params.image_url;
+    const filePath = path.join(__dirname, '../uploads', filename);
+    
+    if (fs.existsSync(filePath)) {
+        resp.download(filePath);
+    } else {    
+        resp.status(404).send(apiError("Image not found"));
+    }
 });
 
 module.exports = router;
