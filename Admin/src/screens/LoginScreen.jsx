@@ -34,14 +34,15 @@ const LoginScreen = ({ navigation }) => {
     }
 
     else {
-      
+
        const result = await Login(email, password);
       if (result['status'] == 'success') {
          setSnackbarMessage(result.message || 'Login');
          setSnackbarVisible(true);
          const { token, name, email, phone, user_id, User_role } = result['data']
          setCache(token, name, email, phone, user_id, User_role)
-         navigation.replace('Account')
+         navigation.replace('Order')
+        
       }  else {
       setSnackbarMessage(result.message || 'Login failed');
       setSnackbarVisible(true);
@@ -64,7 +65,7 @@ const LoginScreen = ({ navigation }) => {
         <Card style={styles.card}>
           <Card.Content style={styles.cardContent}>
             <Title style={styles.cardTitle}>Login</Title>
-            
+
             <TextInput
               label="Email"
               value={email}

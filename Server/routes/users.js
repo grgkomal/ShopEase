@@ -1,8 +1,8 @@
 
-
 const db = require("../utils/dbpool");
 const { apiSuccess, apiError } = require("../utils/apiresult");
-const { createToken } = require("../utils/jwtauth");
+const { createToken, jwtAuth, adminAuth, userOrAdminAuth } = require("../utils/jwtauth");
+const { logUserAction,getUserIP } = require("../utils/userLogs");
 const express = require("express");
 const bcrypt = require("bcrypt");
 const nodemailer = require('nodemailer'); // npm install nodemailer
@@ -55,10 +55,8 @@ async function sendEmail(to, subject, text, html) {
     }
 }
 
-// common prefix -- /users
-
 // GET /users/:user_id
-router.get("/:user_id", (req, resp) => {
+router.get("/:user_id", jwtAuth, userOrAdminAuth, (req, resp) => {
     db.query("SELECT user_id, name, email, phone, User_role, is_active, created_at FROM users WHERE user_id=?", 
         [req.params.user_id],
         (err, results) => {
@@ -72,7 +70,7 @@ router.get("/:user_id", (req, resp) => {
 })
 
 // GET /users/byemail/:email
-router.get("/byemail/:email", (req, resp) => {
+router.get("/byemail/:email", jwtAuth, userOrAdminAuth, (req, resp) => {
     db.query("SELECT user_id, name, email, phone, User_role, is_active, created_at FROM users WHERE email=?", 
         [req.params.email],
         (err, results) => {
@@ -86,7 +84,7 @@ router.get("/byemail/:email", (req, resp) => {
 })
 
 // GET /users/customers/all - Get all customers for admin
-router.get("/customers/all", (req, resp) => {
+router.get("/customers/all", jwtAuth, adminAuth, (req, resp) => {
     // Check if user is admin (assuming middleware sets req.user)
     if(req.user && req.user.role !== 'ADMIN') {
         return resp.send(apiError("Access denied. Admin privileges required."))
@@ -102,7 +100,7 @@ router.get("/customers/all", (req, resp) => {
 })
 
 // GET /users/all - Get all users for admin
-router.get("/all/users", (req, resp) => {
+router.get("/all/users", jwtAuth, adminAuth, (req, resp) => {
     // Check if user is admin
     if(req.user && req.user.role !== 'ADMIN') {
         return resp.send(apiError("Access denied. Admin privileges required."))
@@ -118,7 +116,7 @@ router.get("/all/users", (req, resp) => {
 })
 
 // POST /users/signin
-router.post("/adminsignin", (req, resp) => {
+router.post("/signin", (req, resp) => {
     const {email, password} = req.body
     
     if(!email || !password) {
@@ -160,9 +158,8 @@ router.post("/adminsignin", (req, resp) => {
         }
     )
 })
- 
 
-// POST Routes  -> to sign in as admin 
+// POST Routes  -> to sign in
 router.post("/adminsignin", (req, res) => {
     const { email, password } = req.body;
     const userIP = getUserIP(req);
@@ -205,8 +202,6 @@ router.post("/adminsignin", (req, res) => {
         res.send(apiSuccess({ ...userWithoutPassword, token }));
     });
 });
-
-
 
 // POST /users/signup
 router.post("/signup", (req, resp) => {
@@ -311,8 +306,6 @@ process.on('SIGINT', async () => {
     process.exit(0);
 });
 
-
-
 // POST /users/verify-otp - Verify OTP
 router.post("/verify-otp", async (req, resp) => {
     const { email, otp } = req.body;
@@ -357,8 +350,6 @@ router.post("/verify-otp", async (req, resp) => {
     }));
 });
 
-
-
 // POST /users/reset-password - Reset password using reset token
 router.post("/reset-password", async (req, resp) => {
     const { resetToken, newPassword } = req.body;
@@ -401,7 +392,7 @@ router.post("/reset-password", async (req, resp) => {
 });
 
 // PUT /users/:user_id - Update user profile
-router.put("/:user_id", (req, resp) => {
+router.put("/:user_id", jwtAuth, userOrAdminAuth, (req, resp) => {
     const {name, phone} = req.body
     const userId = req.params.user_id
     
@@ -437,7 +428,7 @@ router.put("/:user_id", (req, resp) => {
 
 
 // PATCH /users/activate/:email - Activate user (Admin only)
-router.patch("/activate/:email", (req, resp) => {
+router.patch("/activate/:email", jwtAuth, userOrAdminAuth, (req, resp) => {
     // Check if admin
     if(req.user && req.user.role !== 'ADMIN') {
         return resp.send(apiError("Access denied. Admin privileges required."))
@@ -456,7 +447,7 @@ router.patch("/activate/:email", (req, resp) => {
     )
 })
 
-// PATCH /users/changepassword - Change password (authenticated users)
+// PATCH /users/changepassword - Change password 
 router.patch("/changepassword", (req, resp) => {
     const {currentPassword, newPassword} = req.body
     const userId = req.user.id
@@ -503,7 +494,7 @@ router.patch("/changepassword", (req, resp) => {
 })
 
 // PATCH /users/role/:user_id - Change user role (Admin only)
-router.patch("/role/:user_id", (req, resp) => {
+router.patch("/role/:user_id", jwtAuth, userOrAdminAuth, (req, resp) => {
     const {role} = req.body
     const userId = req.params.user_id
     
@@ -530,7 +521,7 @@ router.patch("/role/:user_id", (req, resp) => {
 })
 
 // DELETE /users/:email - Deactivate user
-router.delete("/:email", (req, resp) => {
+router.delete("/:email", jwtAuth, userOrAdminAuth, (req, resp) => {
     // Check if admin
     if(req.user && req.user.role !== 'ADMIN') {
         return resp.send(apiError("Access denied. Admin privileges required."))
@@ -548,8 +539,6 @@ router.delete("/:email", (req, resp) => {
         }
     )
 })
-
-
 
 module.exports = router
 

@@ -182,7 +182,7 @@
 
 const db = require("../utils/dbpool");
 const { apiSuccess, apiError } = require("../utils/apiresult");
-const { jwtAuth, adminAuth } = require("../utils/jwtauth");
+// const { jwtAuth, adminAuth } = require("../utils/jwtauth");
 const express = require("express");
 const multer = require("multer");
 const path = require("path");

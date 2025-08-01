@@ -11,7 +11,7 @@ const router = express.Router();
 
 // ----------------------- ORDER DETAILS ----------------------
 // GET /admin/orders/summary - Get total orders count for admin
-router.get("/orders/summary", /*adminAuth,*/ (req, resp) => {    
+router.get("/orders/summary",jwtAuth, adminAuth, (req, resp) => {    
     const queries = [
         "SELECT COUNT(*) as total_orders FROM orders",
         "SELECT COUNT(*) as pending_orders FROM order_summary WHERE order_status = 'PENDING'",
@@ -41,7 +41,7 @@ router.get("/orders/summary", /*adminAuth,*/ (req, resp) => {
 });
 
 // GET /admin/orders - Get all orders for admin
-router.get("/orders", /*adminAuth,*/ (req, resp) => {
+router.get("/orders", jwtAuth, adminAuth, (req, resp) => {
     const query = `
         SELECT 
             o.order_id,
@@ -70,7 +70,7 @@ router.get("/orders", /*adminAuth,*/ (req, resp) => {
 });
 
 // GET /admin/orders/CUSTOMER - Get all customer orders
-router.get("/orders/CUSTOMER", /*adminAuth,*/ (req, res) => {
+router.get("/orders/CUSTOMER", jwtAuth, adminAuth, (req, res) => {
     const query = `
         SELECT 
             o.order_id,
@@ -95,7 +95,7 @@ router.get("/orders/CUSTOMER", /*adminAuth,*/ (req, res) => {
 });
 
 // GET /admin/orders/:id - Get single order details
-router.get("/orders/:order_id", /*adminAuth,*/ (req, res) => {
+router.get("/orders/:order_id", jwtAuth, adminAuth, (req, res) => {
     const order_id = req.params.order_id;
     
     const query = `
@@ -135,7 +135,7 @@ router.get("/orders/:order_id", /*adminAuth,*/ (req, res) => {
 });
 
 // GET /admin/dashboard - Get dashboard summary data
-router.get("/dashboard", /*adminAuth,*/ (req, res) => {
+router.get("/dashboard", jwtAuth, adminAuth, (req, res) => {
     const dashboardQuery = `
         SELECT 
             COUNT(*) as total_orders,
@@ -165,7 +165,7 @@ router.get("/dashboard", /*adminAuth,*/ (req, res) => {
 });
 
 // PATCH /admin/orders/:order_id/status - Update order status (Admin only)
-router.patch("/orders/:order_id/status", /*adminAuth,*/ (req, resp) => {
+router.patch("/orders/:order_id/status", jwtAuth, adminAuth, (req, resp) => {
     const { order_status } = req.body;
     const order_id = req.params.order_id;
     
@@ -214,7 +214,7 @@ router.patch("/orders/:order_id/status", /*adminAuth,*/ (req, resp) => {
 });
 
 // DELETE /admin/orders/:order_id - Delete order (Admin only)
-router.delete("/orders/:order_id", /*adminAuth,*/ (req, resp) => {
+router.delete("/orders/:order_id", jwtAuth, adminAuth, (req, resp) => {
     const order_id = req.params.order_id;
     
     db.beginTransaction((err) => {
@@ -260,7 +260,7 @@ router.delete("/orders/:order_id", /*adminAuth,*/ (req, resp) => {
 //------------------------ USER_LOGS DETAILS ---------------------------------
 
 // GET /admin/logs - Get all user activity logs
-router.get("/logs",/*  adminAuth,  */ (req, res) => {
+router.get("/logs",jwtAuth, adminAuth, (req, res) => {
     const query = `
         SELECT 
             ul.log_id,
@@ -287,7 +287,7 @@ router.get("/logs",/*  adminAuth,  */ (req, res) => {
 });
 
 // GET /admin/logs/user/:user_id - Get logs for specific user
-router.get("/logs/user/:user_id",/* adminAuth,  */ (req, res) => {
+router.get("/logs/user/:user_id",jwtAuth, adminAuth, (req, res) => {
     const user_id = req.params.user_id;
     
     const query = `
@@ -316,7 +316,7 @@ router.get("/logs/user/:user_id",/* adminAuth,  */ (req, res) => {
 });
 
 // GET /admin/logs/today - Get today's activity logs
-router.get("/logs/today",/*  adminAuth, */  (req, res) => {
+router.get("/logs/today",jwtAuth, adminAuth, (req, res) => {
     const query = `
         SELECT 
             ul.log_id,
@@ -345,7 +345,7 @@ router.get("/logs/today",/*  adminAuth, */  (req, res) => {
 // ----------------------- EMPLOYEE DETAILS -----------------------
 
 // GET /admin/employees - Get all active employees
-router.get("/employees",/* adminAuth, */ (req, res) => {
+router.get("/employees",jwtAuth, adminAuth, (req, res) => {
     const query = `
         SELECT 
             user_id,
@@ -369,7 +369,7 @@ router.get("/employees",/* adminAuth, */ (req, res) => {
 });
 
 // GET /admin/employees/inactive - Get inactive employees
-router.get("/employees/inactive",/* adminAuth, */ (req, res) => {
+router.get("/employees/inactive",jwtAuth, adminAuth, (req, res) => {
     const query = `
         SELECT 
             user_id,
@@ -393,7 +393,7 @@ router.get("/employees/inactive",/* adminAuth, */ (req, res) => {
 });
 
 // PATCH /admin/employees/:email/toggle - Activate/Deactivate employee
-router.patch("/employees/:email/toggle",/* adminAuth, */ (req, res) => {
+router.patch("/employees/:email/toggle",jwtAuth, adminAuth, (req, res) => {
     const user_email = req.params.email;
     const isActive = req.body.is_active; // should be 1 or 0
     
@@ -419,7 +419,7 @@ router.patch("/employees/:email/toggle",/* adminAuth, */ (req, res) => {
 });
 
 // PATCH /admin/role/:user_id - Change user role (Admin only)
-router.patch("/role/:user_id",/* adminAuth, */ (req, res) => {
+router.patch("/role/:user_id",jwtAuth, adminAuth, (req, res) => {
     const { role } = req.body;
     const userId = req.params.user_id;
     
@@ -443,7 +443,7 @@ router.patch("/role/:user_id",/* adminAuth, */ (req, res) => {
 // ----------------------- CUSTOMERS DETAILS -----------------------
 
 // GET /admin/customers - Get all customers
-router.get("/customers",/* adminAuth, */ (req, res) => {
+router.get("/customers",jwtAuth, adminAuth, (req, res) => {
     const query = `
         SELECT 
             user_id,

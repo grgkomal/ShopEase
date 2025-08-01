@@ -251,7 +251,7 @@ export async function changePassword(currentPassword, newPassword) {
         `${config.server}/users/${cachedData.user_id}/password`,
         `${config.server}/users/${cachedData.user_id}/changepassword`
       ] : []),
-      k
+      
       `${config.server}/users/changepassword`
     ];
 
@@ -309,6 +309,7 @@ export async function changePassword(currentPassword, newPassword) {
         continue;
       }
     }
+    
     return {
       success: false,
       message: 'Change password endpoint not found. Please check your API configuration.'
@@ -322,7 +323,6 @@ export async function changePassword(currentPassword, newPassword) {
     };
   }
 }
-
 
 // Forgot Password
 export async function forgotPassword(email) {

@@ -112,37 +112,6 @@ const AdminUserLogsScreen = ({ navigation }) => {
     }
   };
 
-  // Fetch user logs by user ID
-  const fetchUserLogsByUserId = async (userId) => {
-    try {
-      setLoading(true);
-      console.log('Fetching user logs for user ID:', userId);
-      
-      const result = await getUserLogsByUserId(userId);
-      console.log('User logs by user ID fetch result:', result);
-
-      if (result && (result.success || result.status === 'success') && result.data) {
-        console.log('User logs by user ID fetched successfully:', result.data);
-        setLogs(Array.isArray(result.data) ? result.data : []);
-        setFilteredLogs(Array.isArray(result.data) ? result.data : []);
-      } else {
-        const errorMessage = result?.message || result?.error || 'Failed to fetch user logs';
-        console.error('Fetch user logs by user ID failed:', errorMessage);
-        showSnackbar(errorMessage);
-        setLogs([]);
-        setFilteredLogs([]);
-      }
-      
-    } catch (error) {
-      console.error('Error fetching user logs by user ID:', error);
-      showSnackbar('Failed to load user logs. Please try again.');
-      setLogs([]);
-      setFilteredLogs([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
 
   useEffect(() => {
     fetchAllUserLogs();
@@ -312,13 +281,7 @@ const AdminUserLogsScreen = ({ navigation }) => {
           >
             Today's Logs
           </Chip>
-          <Chip 
-            selected={selectedFilter === 'user'}
-            onPress={() => handleFilterChange('user')}
-            style={userLogsStyles.filterChip}
-          >
-            By User ID
-          </Chip>
+          
         </ScrollView>
       </View>
 
@@ -351,7 +314,6 @@ const AdminUserLogsScreen = ({ navigation }) => {
           onDismiss={() => setUserSearchDialogVisible(false)}
           style={styles.dialog}
         >
-          <Dialog.Title>Search Logs by User ID</Dialog.Title>
           <Dialog.Content>
             <TextInput
               label="User ID"

@@ -1,14 +1,14 @@
 //routes/cart
 const db = require("../utils/dbpool");
 const { apiSuccess, apiError } = require("../utils/apiresult");
-const { jwtAuth, adminAuth } = require("../utils/jwtauth");
+const { jwtAuth,  userOrAdminAuth } = require("../utils/jwtauth");
 const express = require("express");
 const router = express.Router();
 
 // ======================= CART ROUTES =======================
 
 // GET /cart - Get user's cart items
-router.get("", (req, resp) => {
+router.get("", jwtAuth, userOrAdminAuth, (req, resp) => {
     const user_id = req.user.id;
     const query = `
         SELECT c.*, p.product_name, p.price, p.image_url, p.product_quantity as available_quantity,
@@ -36,7 +36,7 @@ router.get("", (req, resp) => {
 
 
 // POST /cart - Add item to cart
-router.post("", (req, resp) => {
+router.post("",  (req, resp) => {
 
     const user_id = req.user.id;
     const { product_id, quantity } = req.body;
@@ -103,7 +103,7 @@ router.post("", (req, resp) => {
 
 
 // PUT /cart/:cart_id - Update cart item quantity
-router.put("/:cart_id", (req, resp) => {
+router.put("/:cart_id", jwtAuth, userOrAdminAuth, (req, resp) => {
 
     const user_id = req.user.id;
     const { quantity } = req.body;
@@ -148,7 +148,7 @@ router.put("/:cart_id", (req, resp) => {
 });
 
 // DELETE /cart/:cart_id - Remove item from cart
-router.delete("/:cart_id", (req, resp) => {
+router.delete("/:cart_id", jwtAuth, userOrAdminAuth, (req, resp) => {
     // console.log(req.body);
     const user_id = req.user.id;
     db.query("SELECT user_id FROM cart WHERE cart_id=?", [req.params.cart_id],
@@ -174,7 +174,7 @@ router.delete("/:cart_id", (req, resp) => {
 });
 
 // DELETE /cart - Clear user's cart
-router.delete("/clear", (req, resp) => {
+router.delete("/clear", jwtAuth, userOrAdminAuth, (req, resp) => {
     const user_id = req.user.id || req.user.user_id;
     db.query("DELETE FROM cart WHERE user_id=?", [user_id],
         (err, result) => {
@@ -186,7 +186,7 @@ router.delete("/clear", (req, resp) => {
 });
 
 // POST /orders - Create new order from cart
-router.post("/order", (req, resp) => {
+router.post("/order", jwtAuth, userOrAdminAuth, (req, resp) => {
     console.log(req.body);
 
     const user_id = req.user.id;

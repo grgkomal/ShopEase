@@ -2,7 +2,7 @@
 // routes/products.js (Enhanced version with filters)
 const db = require("../utils/dbpool");
 const { apiSuccess, apiError } = require("../utils/apiresult");
-const { jwtAuth, adminAuth } = require("../utils/jwtauth");
+const { jwtAuth, adminAuth} = require("../utils/jwtauth");
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
@@ -142,7 +142,7 @@ router.post("/",/*adminAuth,*/ upload.single('image_url'), (req, resp) => {
     );
 });
 
-router.put("/:product_id",/* adminAuth, */ upload.single('image_url'), (req, resp) => {
+router.put("/:product_id",jwtAuth, adminAuth,upload.single('image_url'), (req, resp) => {
     const { product_name, description, price, product_quantity } = req.body;
     const image_url = req.file ? req.file.filename : req.body.existing_image_url;
 
@@ -186,7 +186,7 @@ router.put("/:product_id",/* adminAuth, */ upload.single('image_url'), (req, res
 });
 
 // DELETE /api/products/:product_id - Delete product (Admin only)
-router.delete("/:product_id",/* adminAuth, */ (req, resp) => {
+router.delete("/:product_id",jwtAuth, adminAuth,(req, resp) => {
     db.query("SELECT COUNT(*) as cart_count FROM cart WHERE product_id=?", [req.params.product_id],
         (err, cartResults) => {
             if (err)

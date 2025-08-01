@@ -1,7 +1,7 @@
 // routes/notifications.js
 const db = require("../utils/dbpool");
 const { apiSuccess, apiError } = require("../utils/apiresult");
-const { jwtAuth, adminAuth } = require("../utils/jwtauth");
+const { jwtAuth, adminAuth,  userOrAdminAuth } = require("../utils/jwtauth");
 const express = require("express");
 const router = express.Router();
 

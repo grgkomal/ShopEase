@@ -1,6 +1,8 @@
 //routes/order_summary
 const db = require("../utils/dbpool");
 const { apiSuccess, apiError } = require("../utils/apiresult");
+
+const { jwtAuth,  userOrAdminAuth } = require("../utils/jwtauth");
 const express = require("express");
 const router = express.Router();
 
@@ -8,7 +10,7 @@ const router = express.Router();
 // ======================= ORDER_summary ROUTES =======================
 
 // GET /order_summary - Get user's order summary
-router.get("/", (req, resp) => {
+router.get("/", jwtAuth, userOrAdminAuth, (req, resp) => {
     const user_id = req.user.id;
     
     const query = `
