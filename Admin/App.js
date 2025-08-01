@@ -13,7 +13,8 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import AdminOrderScreen from './src/screens/AdminOrderScreen';
 import AdminUserLogsScreen from './src/screens/AdminUserLogsScreen';
-import AdminEmployeeCustomerScreen from './src/screens/AdminEmployeeCustomerScreen';
+// import AdminEmployeeCustomerScreen from './src/screens/AdminEmployeeCustomerScreen';
+import AdminEmployeeScreen from './src/screens/AdminEmployeeCustomerScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -55,7 +56,7 @@ export default function App() {
 
            <Stack.Screen 
             name="Employee" 
-            component={AdminEmployeeCustomerScreen} 
+            component={AdminEmployeeScreen} 
             options={{ headerShown: false }}
           />
           

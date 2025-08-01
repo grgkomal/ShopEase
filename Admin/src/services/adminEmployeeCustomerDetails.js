@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { config } from '../configuration/config';
 import { getCache } from '../utils/auth';
@@ -7,7 +6,7 @@ import api from './api';
 // Get all active employees
 export const getAllEmployees = async () => {
   try {
-    console.log('Fetching all employees...');
+    console.log('Fetching all active employees...');
     const { token } = await getCache();
     if (!token) {
       throw new Error('No authentication token found');
@@ -20,13 +19,13 @@ export const getAllEmployees = async () => {
       }
     });
     
-    console.log('Employees fetched successfully:', response.data);
+    console.log('Active employees fetched successfully:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Get Employees Error:', error.response?.data || error.message);
+    console.error('Get Active Employees Error:', error.response?.data || error.message);
     return {
       success: false,
-      message: error.response?.data?.message || 'Failed to fetch employees'
+      message: error.response?.data?.message || 'Failed to fetch active employees'
     };
   }
 };
@@ -43,17 +42,12 @@ export const getInactiveEmployees = async () => {
     }
     console.log('✅ Token found:', token.substring(0, 20) + '...');
     
-    const url = `${config.server}/admin/employees/inactive`;
-    console.log('1. Request URL:', url);
-    
-    const headers = { 
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-    console.log('2. Request headers:', headers);
-    
-    console.log('3. Making GET request...');
-    const response = await axios.get(url, { headers });
+    const response = await api.get('/admin/employees/inactive', {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
     
     console.log('4. Response received:');
     console.log('   Status:', response.status);
@@ -92,17 +86,12 @@ export const getAllCustomers = async () => {
     }
     console.log('✅ Token found:', token.substring(0, 20) + '...');
     
-    const url = `${config.server}/admin/customers`;
-    console.log('1. Request URL:', url);
-    
-    const headers = { 
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-    console.log('2. Request headers:', headers);
-    
-    console.log('3. Making GET request...');
-    const response = await axios.get(url, { headers });
+    const response = await api.get('/admin/customers', {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
     
     console.log('4. Response received:');
     console.log('   Status:', response.status);
@@ -143,20 +132,16 @@ export const toggleEmployeeStatus = async (email, isActive) => {
     }
     console.log('✅ Token found:', token.substring(0, 20) + '...');
     
-    const url = `${config.server}/admin/employees/${email}/toggle`;
-    console.log('3. Request URL:', url);
-    
-    const headers = { 
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-    console.log('4. Request headers:', headers);
-    
     const requestData = { is_active: isActive };
     console.log('5. Request data:', requestData);
     
     console.log('6. Making PATCH request...');
-    const response = await axios.patch(url, requestData, { headers });
+    const response = await api.patch(`/admin/employees/${email}/toggle`, requestData, {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
     
     console.log('7. Response received:');
     console.log('   Status:', response.status);
@@ -197,20 +182,16 @@ export const updateUserRole = async (userId, role) => {
     }
     console.log('✅ Token found:', token.substring(0, 20) + '...');
     
-    const url = `${config.server}/admin/role/${userId}`;
-    console.log('3. Request URL:', url);
-    
-    const headers = { 
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-    console.log('4. Request headers:', headers);
-    
     const requestData = { role: role };
     console.log('5. Request data:', requestData);
     
     console.log('6. Making PATCH request...');
-    const response = await axios.patch(url, requestData, { headers });
+    const response = await api.patch(`/admin/role/${userId}`, requestData, {
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
     
     console.log('7. Response received:');
     console.log('   Status:', response.status);

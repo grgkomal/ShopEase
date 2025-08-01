@@ -1,5 +1,4 @@
-
-// src/screens/AdminEmployeeCustomerScreen.jsx
+// src/screens/adminEmployeeScreen.jsx
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
 import {
@@ -33,7 +32,7 @@ import { styles } from '../theme/styles';
 import { theme } from '../theme/theme';
 import BottomNavigation from '../navigation/BottomNavigation';
 
-const AdminEmployeeCustomerScreen = ({ navigation }) => {
+const AdminEmployeeScreen = ({ navigation }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,7 +51,7 @@ const AdminEmployeeCustomerScreen = ({ navigation }) => {
   const fetchAllEmployees = async () => {
     try {
       setLoading(true);
-      console.log('Fetching all employees...');
+      console.log('Fetching all active employees...');
       const cachedData = await getCache();
       if (!cachedData || !cachedData.token) {
         console.log('No cached token found, redirecting to login');
@@ -61,23 +60,23 @@ const AdminEmployeeCustomerScreen = ({ navigation }) => {
       }
 
       const result = await getAllEmployees();
-      console.log('Employees fetch result:', result);
+      console.log('Active employees fetch result:', result);
 
       if (result && (result.success || result.status === 'success') && result.data) {
-        console.log('Employees fetched successfully:', result.data);
+        console.log('Active employees fetched successfully:', result.data);
         setUsers(Array.isArray(result.data) ? result.data : []);
         setFilteredUsers(Array.isArray(result.data) ? result.data : []);
       } else {
-        const errorMessage = result?.message || result?.error || 'Failed to fetch employees';
-        console.error('Fetch employees failed:', errorMessage);
+        const errorMessage = result?.message || result?.error || 'Failed to fetch active employees';
+        console.error('Fetch active employees failed:', errorMessage);
         showSnackbar(errorMessage);
         setUsers([]);
         setFilteredUsers([]);
       }
       
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      showSnackbar('Failed to load employees. Please try again.');
+      console.error('Error fetching active employees:', error);
+      showSnackbar('Failed to load active employees. Please try again.');
       setUsers([]);
       setFilteredUsers([]);
     } finally {
@@ -151,14 +150,18 @@ const AdminEmployeeCustomerScreen = ({ navigation }) => {
   const handleToggleEmployeeStatus = async (user) => {
     try {
       setActionLoading(true);
-      console.log('Toggling employee status for:', user.email);
+      console.log('Toggling employee status for:', user.email, 'Current status:', user.is_active);
       
-      const newStatus = user.is_active ? 0 : 1;
+      // Toggle the status: if currently active (1), make inactive (0), and vice versa
+      const newStatus = user.is_active === 1 ? 0 : 1;
+      console.log('New status will be:', newStatus);
+      
       const result = await toggleEmployeeStatus(user.email, newStatus);
       console.log('Toggle status result:', result);
 
       if (result && (result.success || result.status === 'success')) {
-        showSnackbar(result.message || 'Employee status updated successfully');
+        const statusText = newStatus === 1 ? 'activated' : 'deactivated';
+        showSnackbar(result.message || `Employee ${statusText} successfully`);
         handleRefresh();
       } else {
         const errorMessage = result?.message || result?.error || 'Failed to update employee status';
@@ -280,7 +283,11 @@ const AdminEmployeeCustomerScreen = ({ navigation }) => {
   };
 
   const getStatusColor = (isActive) => {
-    return isActive ? theme.colors.primary : theme.colors.outline;
+    return isActive === 1 ? theme.colors.primary : theme.colors.outline;
+  };
+
+  const getStatusText = (isActive) => {
+    return isActive === 1 ? 'Active' : 'Inactive';
   };
 
   const toggleMenu = (userId) => {
@@ -306,7 +313,7 @@ const AdminEmployeeCustomerScreen = ({ navigation }) => {
                   {item.User_role || 'CUSTOMER'}
                 </Badge>
                 <Badge style={[userScreenStyles.statusBadge, { backgroundColor: getStatusColor(item.is_active) }]}>
-                  {item.is_active ? 'Active' : 'Inactive'}
+                  {getStatusText(item.is_active)}
                 </Badge>
               </View>
               <Text style={userScreenStyles.joinDate}>
@@ -341,12 +348,12 @@ const AdminEmployeeCustomerScreen = ({ navigation }) => {
               />
               {(item.User_role === 'EMPLOYEE' || item.User_role === 'ADMIN') && (
                 <Menu.Item
-                  leadingIcon={item.is_active ? "account-off" : "account-check"}
+                  leadingIcon={item.is_active === 1 ? "account-off" : "account-check"}
                   onPress={() => {
                     toggleMenu(item.user_id);
                     handleToggleEmployeeStatus(item);
                   }}
-                  title={item.is_active ? "Deactivate" : "Activate"}
+                  title={item.is_active === 1 ? "Deactivate" : "Activate"}
                 />
               )}
             </Menu>
@@ -469,8 +476,8 @@ const AdminEmployeeCustomerScreen = ({ navigation }) => {
                   <Divider />
                   <List.Item
                     title="Status"
-                    description={selectedUser.is_active ? 'Active' : 'Inactive'}
-                    left={props => <List.Icon {...props} icon={selectedUser.is_active ? "check-circle" : "close-circle"} />}
+                    description={getStatusText(selectedUser.is_active)}
+                    left={props => <List.Icon {...props} icon={selectedUser.is_active === 1 ? "check-circle" : "close-circle"} />}
                   />
                   <Divider />
                   <List.Item
@@ -513,7 +520,7 @@ const AdminEmployeeCustomerScreen = ({ navigation }) => {
                       role === 'ADMIN' ? 'shield-account' :
                       role === 'EMPLOYEE' ? 'account-tie' :
                       role === 'CUSTOMER' ? 'account' :
-                      'UNKNOWN'
+                      'account'
                     }
                     value={role}
                     status={newRole === role ? 'checked' : 'unchecked'}
@@ -675,4 +682,4 @@ const userScreenStyles = StyleSheet.create({
   },
 });
 
-export default AdminEmployeeCustomerScreen;
+export default AdminEmployeeScreen;
