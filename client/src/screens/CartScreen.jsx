@@ -1,3 +1,4 @@
+
 // src/screens/CartScreen.jsx
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Image, RefreshControl, Dimensions } from 'react-native';
@@ -27,6 +28,7 @@ import {
 } from '../services/cart';
 import { getAddresses } from '../services/address';
 import { getCache } from '../utils/auth';
+import { config } from '../configuration/config';
 import { theme } from '../theme/theme';
 import BottomNavigation from '../navigation/BottomNavigation';
 
@@ -38,6 +40,35 @@ const CartScreen = ({ navigation }) => {
     total_amount: 0,
     item_count: 0
   });
+
+  // Helper function to get product image URL
+  const getProductImageUrl = (product) => {
+    try {
+      if (!config || !config.server) {
+        console.warn('Config or server URL not available');
+        return null;
+      }
+
+      if (product?.image_url) {
+        if (product.image_url.startsWith('http')) {
+          return product.image_url;
+        }
+        const filename = product.image_url.includes('/')
+          ? product.image_url.split('/').pop()
+          : product.image_url;
+
+        const imageUrl = `${config.server}/product/download/${filename}`;
+        console.log('Constructed product image URL:', imageUrl);
+        return imageUrl;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error constructing product image URL:', error);
+      return null;
+    }
+  };
+
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -379,70 +410,80 @@ const CartScreen = ({ navigation }) => {
         ) : (
           <>
             <View style={styles.cartItemsContainer}>
-              {cartData.cart_items.map((item, index) => (
-                <View key={item.cart_id || index} style={styles.cartItem}>
+              {cartData.cart_items.map((item, index) => {
+                const imageUrl = getProductImageUrl(item);
+                
+                return (
+                  <View key={item.cart_id || index} style={styles.cartItem}>
 
-                  <View style={styles.productImageContainer}>
-                    {item.image_url ? (
-                      <Image 
-                        source={{ uri: item.image_url }} 
-                        style={styles.productImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={styles.placeholderImage}>
-                        <Text style={styles.placeholderText}>No Image</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.productDetails}>
-                    <Text style={styles.productName} numberOfLines={2}>
-                      {item.product_name}
-                    </Text>
-                    <Text style={styles.productPrice}>
-                      {formatPrice(item.price)} each
-                    </Text>
-                    <Text style={styles.stockInfo}>
-                      Available: {item.available_quantity}
-                    </Text>
-
-                    <View style={styles.quantityRow}>
-                      <View style={styles.quantityControls}>
-                        <IconButton
-                          icon="minus"
-                          size={16}
-                          onPress={() => handleQuantityChange(item, item.quantity - 1)}
-                          disabled={submitLoading || item.quantity <= 1}
-                          style={styles.quantityButton}
-                          iconColor="#666"
+                    <View style={styles.productImageContainer}>
+                      {imageUrl ? (
+                        <Image 
+                          source={{ uri: imageUrl }} 
+                          style={styles.productImage}
+                          resizeMode="cover"
+                          onError={(error) => {
+                            console.log('Image load error for product:', item.product_name, error.nativeEvent.error);
+                          }}
+                          onLoad={() => {
+                            console.log('Image loaded successfully for:', item.product_name);
+                          }}
                         />
-                        <Text style={styles.quantityText}>{item.quantity}</Text>
-                        <IconButton
-                          icon="plus"
-                          size={16}
-                          onPress={() => handleQuantityChange(item, item.quantity + 1)}
-                          disabled={submitLoading || item.quantity >= item.available_quantity}
-                          style={styles.quantityButton}
-                          iconColor="#666"
-                        />
-                      </View>
-                      <Text style={styles.itemTotal}>
-                        Total: {formatPrice(item.item_total)}
-                      </Text>
+                      ) : (
+                        <View style={styles.placeholderImage}>
+                          <Text style={styles.placeholderText}>No Image</Text>
+                        </View>
+                      )}
                     </View>
-                  </View>
 
-                  <IconButton
-                    icon="delete"
-                    size={20}
-                    iconColor="#ff4444"
-                    onPress={() => handleDeleteItem(item)}
-                    disabled={submitLoading}
-                    style={styles.deleteButton}
-                  />
-                </View>
-              ))}
+                    <View style={styles.productDetails}>
+                      <Text style={styles.productName} numberOfLines={2}>
+                        {item.product_name}
+                      </Text>
+                      <Text style={styles.productPrice}>
+                        {formatPrice(item.price)} each
+                      </Text>
+                      <Text style={styles.stockInfo}>
+                        Available: {item.available_quantity}
+                      </Text>
+
+                      <View style={styles.quantityRow}>
+                        <View style={styles.quantityControls}>
+                          <IconButton
+                            icon="minus"
+                            size={16}
+                            onPress={() => handleQuantityChange(item, item.quantity - 1)}
+                            disabled={submitLoading || item.quantity <= 1}
+                            style={styles.quantityButton}
+                            iconColor="#666"
+                          />
+                          <Text style={styles.quantityText}>{item.quantity}</Text>
+                          <IconButton
+                            icon="plus"
+                            size={16}
+                            onPress={() => handleQuantityChange(item, item.quantity + 1)}
+                            disabled={submitLoading || item.quantity >= item.available_quantity}
+                            style={styles.quantityButton}
+                            iconColor="#666"
+                          />
+                        </View>
+                        <Text style={styles.itemTotal}>
+                          Total: {formatPrice(item.item_total)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <IconButton
+                      icon="delete"
+                      size={20}
+                      iconColor="#ff4444"
+                      onPress={() => handleDeleteItem(item)}
+                      disabled={submitLoading}
+                      style={styles.deleteButton}
+                    />
+                  </View>
+                );
+              })}
             </View>
 
             <View style={styles.summaryContainer}>
