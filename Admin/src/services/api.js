@@ -10,16 +10,6 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// api.js
-
-// import axios from 'axios';
-// import { config } from '../configuration/config';
-// import { getCache, setCache } from '../utils/auth';
-
-
-
-
-
 // Request interceptor to add auth token
 api.interceptors.request.use(
   async (requestConfig) => {
