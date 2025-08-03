@@ -1,3 +1,6 @@
+
+
+
 // src/screens/HomeScreen.jsx
 import React, { useState, useEffect } from 'react';
 import {
@@ -22,6 +25,35 @@ const HomeScreen = ({ navigation }) => {
   const [searchText, setSearchText] = useState('');
   const [user, setUser] = useState({ name: 'Guest' });
 
+  // Helper function to get category image URL
+  const getCategoryImageUrl = (category) => {
+    try {
+      if (!config || !config.server) {
+        console.warn('Config or server URL not available');
+        return null;
+      }
+
+      if (category?.image_url) {
+        if (category.image_url.startsWith('http')) {
+          return category.image_url;
+        }
+        
+        const filename = category.image_url.includes('/') 
+          ? category.image_url.split('/').pop() 
+          : category.image_url;
+        
+        const imageUrl = `${config.server}/category/download/${filename}`;
+        console.log('Constructed category image URL:', imageUrl);
+        return imageUrl;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error constructing category image URL:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -40,8 +72,12 @@ const HomeScreen = ({ navigation }) => {
   const loadCategories = async () => {
     setLoading(true);
     try {
+      console.log('Fetching categories...');
       const res = await getAllCategories();
+      console.log('Categories fetch result:', res);
+      
       if (res.status === 'success' && Array.isArray(res.data)) {
+        console.log('Categories fetched successfully:', res.data);
         setCategories(res.data);
         setFilteredCategories(res.data);
       } else {
@@ -50,6 +86,7 @@ const HomeScreen = ({ navigation }) => {
         Alert.alert('Error', res.message || 'Failed to fetch categories');
       }
     } catch (e) {
+      console.error('Error fetching categories:', e);
       setCategories([]);
       setFilteredCategories([]);
       Alert.alert('Error', 'Something went wrong');
@@ -59,6 +96,7 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const onRefresh = async () => {
+    console.log('Refreshing categories...');
     setRefreshing(true);
     await loadCategories();
     setRefreshing(false);
@@ -95,11 +133,7 @@ const HomeScreen = ({ navigation }) => {
   }, [searchText, categories]);
 
   const renderCategoryItem = category => {
-    const imageUrl = category.image_url
-      ? category.image_url.startsWith('http')
-        ? category.image_url
-        : `${config.server}/category/download/${category.image_url.split('/').pop()}`
-      : null;
+    const imageUrl = getCategoryImageUrl(category);
 
     return (
       <TouchableOpacity
@@ -110,7 +144,17 @@ const HomeScreen = ({ navigation }) => {
       >
         <View style={styles.categoryImageContainer}>
           {imageUrl ? (
-            <Image source={{ uri: imageUrl }} style={styles.categoryImage} resizeMode="cover" />
+            <Image 
+              source={{ uri: imageUrl }} 
+              style={styles.categoryImage} 
+              resizeMode="cover"
+              onError={(error) => {
+                console.log('Image load error for category:', category.category_name || category.name, error.nativeEvent.error);
+              }}
+              onLoad={() => {
+                console.log('Image loaded successfully for category:', category.category_name || category.name);
+              }}
+            />
           ) : (
             <View style={styles.placeholderImage}>
               <Icon name="category" size={40} color="#666" />
@@ -317,7 +361,8 @@ const styles = StyleSheet.create({
   },
   categoryImage: { 
     width: '100%', 
-    height: '100%' },
+    height: '100%' 
+  },
   placeholderImage: {
     width: '100%', 
     height: '100%', 
@@ -349,7 +394,8 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     justifyContent: 'center', 
     padding: 40, 
-    width: '100%' },
+    width: '100%' 
+  },
   noCategoriesText: { 
     textAlign: 'center', 
     color: '#666', 

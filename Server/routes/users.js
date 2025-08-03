@@ -1,8 +1,8 @@
 
+
 const db = require("../utils/dbpool");
 const { apiSuccess, apiError } = require("../utils/apiresult");
-const { createToken, jwtAuth, adminAuth, userOrAdminAuth } = require("../utils/jwtauth");
-const { logUserAction,getUserIP } = require("../utils/userLogs");
+const { createToken } = require("../utils/jwtauth");
 const express = require("express");
 const bcrypt = require("bcrypt");
 const nodemailer = require('nodemailer'); // npm install nodemailer
@@ -55,8 +55,10 @@ async function sendEmail(to, subject, text, html) {
     }
 }
 
+// common prefix -- /users
+
 // GET /users/:user_id
-router.get("/:user_id", jwtAuth, userOrAdminAuth, (req, resp) => {
+router.get("/:user_id", (req, resp) => {
     db.query("SELECT user_id, name, email, phone, User_role, is_active, created_at FROM users WHERE user_id=?", 
         [req.params.user_id],
         (err, results) => {
@@ -70,7 +72,7 @@ router.get("/:user_id", jwtAuth, userOrAdminAuth, (req, resp) => {
 })
 
 // GET /users/byemail/:email
-router.get("/byemail/:email", jwtAuth, userOrAdminAuth, (req, resp) => {
+router.get("/byemail/:email", (req, resp) => {
     db.query("SELECT user_id, name, email, phone, User_role, is_active, created_at FROM users WHERE email=?", 
         [req.params.email],
         (err, results) => {
@@ -84,7 +86,7 @@ router.get("/byemail/:email", jwtAuth, userOrAdminAuth, (req, resp) => {
 })
 
 // GET /users/customers/all - Get all customers for admin
-router.get("/customers/all", jwtAuth, adminAuth, (req, resp) => {
+router.get("/customers/all", (req, resp) => {
     // Check if user is admin (assuming middleware sets req.user)
     if(req.user && req.user.role !== 'ADMIN') {
         return resp.send(apiError("Access denied. Admin privileges required."))
@@ -100,7 +102,7 @@ router.get("/customers/all", jwtAuth, adminAuth, (req, resp) => {
 })
 
 // GET /users/all - Get all users for admin
-router.get("/all/users", jwtAuth, adminAuth, (req, resp) => {
+router.get("/all/users", (req, resp) => {
     // Check if user is admin
     if(req.user && req.user.role !== 'ADMIN') {
         return resp.send(apiError("Access denied. Admin privileges required."))
@@ -159,49 +161,53 @@ router.post("/signin", (req, resp) => {
     )
 })
 
-// POST Routes  -> to sign in
-router.post("/adminsignin", (req, res) => {
-    const { email, password } = req.body;
-    const userIP = getUserIP(req);
+
+
+// POST /users/signin
+router.post("/adminsignin", (req, resp) => {
+    const {email, password} = req.body
     
-    if (!email || !password) {
-        logUserAction(null, 'SIGNIN_ATTEMPT', 'Missing credentials', userIP);
-        return res.send(apiError("Email and password are required"));
+    if(!email || !password) {
+        return resp.send(apiError("Email and password are required"))
     }
     
-    db.query("SELECT * FROM users WHERE email=?", [email], (err, results) => {
-        if (err) {
-            logUserAction(null, 'SIGNIN_ATTEMPT', `DB error: ${err.message}`, userIP);
-            return res.send(apiError(err.message));
+    db.query("SELECT * FROM users WHERE email=?", [email],
+        (err, results) => {
+            if(err)
+                return resp.send(apiError(err.message))
+            
+            if(results.length !== 1) {
+                return resp.send(apiError("Invalid email"))
+            }
+            
+            const dbUser = results[0]
+            
+            // Check if user is active
+            if(!dbUser.is_active) {
+                return resp.send(apiError("Account is deactivated. Please contact support."))
+            }
+            
+            const isMatching = bcrypt.compareSync(password, dbUser.password)
+            
+            if(!isMatching) {
+                return resp.send(apiError("Invalid password"))
+            }
+            
+            // Create JWT token
+            const token = createToken({
+                id: dbUser.user_id,
+                role: dbUser.User_role
+            })
+            
+            // Remove password from response
+            const {password: _, ...userWithoutPassword} = dbUser
+            
+            resp.send(apiSuccess({...userWithoutPassword, token}))
         }
-        
-        if (results.length !== 1) {
-            logUserAction(null, 'SIGNIN_FAILED', `Invalid email: ${email}`, userIP);
-            return res.send(apiError("Invalid email"));
-        }
-        
-        const dbUser = results[0];
-        if (!dbUser.User_role) {
-            logUserAction(dbUser.user_id, 'SIGNIN_FAILED', 'User is not admin', userIP);
-            return res.send(apiError("Account is deactivated. Please contact support."));
-        }
-        if (!dbUser.is_active) {
-            logUserAction(dbUser.user_id, 'SIGNIN_FAILED', 'Account deactivated', userIP);
-            return res.send(apiError("Account is deactivated. Please contact support."));
-        }
-        
-        if (!bcrypt.compareSync(password, dbUser.password)) {
-            logUserAction(dbUser.user_id, 'SIGNIN_FAILED', 'Invalid password', userIP);
-            return res.send(apiError("Invalid password"));
-        }
-        
-        const token = createToken({ id: dbUser.user_id, role: dbUser.User_role, email: dbUser.email });
-        logUserAction(dbUser.user_id, 'SIGNIN_SUCCESS', `Successful signin: ${email}`, userIP);
-        
-        const { password: _, ...userWithoutPassword } = dbUser;
-        res.send(apiSuccess({ ...userWithoutPassword, token }));
-    });
-});
+    )
+})
+
+
 
 // POST /users/signup
 router.post("/signup", (req, resp) => {
@@ -306,6 +312,8 @@ process.on('SIGINT', async () => {
     process.exit(0);
 });
 
+
+
 // POST /users/verify-otp - Verify OTP
 router.post("/verify-otp", async (req, resp) => {
     const { email, otp } = req.body;
@@ -350,6 +358,8 @@ router.post("/verify-otp", async (req, resp) => {
     }));
 });
 
+
+
 // POST /users/reset-password - Reset password using reset token
 router.post("/reset-password", async (req, resp) => {
     const { resetToken, newPassword } = req.body;
@@ -392,7 +402,7 @@ router.post("/reset-password", async (req, resp) => {
 });
 
 // PUT /users/:user_id - Update user profile
-router.put("/:user_id", jwtAuth, userOrAdminAuth, (req, resp) => {
+router.put("/:user_id", (req, resp) => {
     const {name, phone} = req.body
     const userId = req.params.user_id
     
@@ -428,7 +438,7 @@ router.put("/:user_id", jwtAuth, userOrAdminAuth, (req, resp) => {
 
 
 // PATCH /users/activate/:email - Activate user (Admin only)
-router.patch("/activate/:email", jwtAuth, userOrAdminAuth, (req, resp) => {
+router.patch("/activate/:email", (req, resp) => {
     // Check if admin
     if(req.user && req.user.role !== 'ADMIN') {
         return resp.send(apiError("Access denied. Admin privileges required."))
@@ -447,7 +457,7 @@ router.patch("/activate/:email", jwtAuth, userOrAdminAuth, (req, resp) => {
     )
 })
 
-// PATCH /users/changepassword - Change password 
+// PATCH /users/changepassword - Change password (authenticated users)
 router.patch("/changepassword", (req, resp) => {
     const {currentPassword, newPassword} = req.body
     const userId = req.user.id
@@ -494,7 +504,7 @@ router.patch("/changepassword", (req, resp) => {
 })
 
 // PATCH /users/role/:user_id - Change user role (Admin only)
-router.patch("/role/:user_id", jwtAuth, userOrAdminAuth, (req, resp) => {
+router.patch("/role/:user_id", (req, resp) => {
     const {role} = req.body
     const userId = req.params.user_id
     
@@ -521,7 +531,7 @@ router.patch("/role/:user_id", jwtAuth, userOrAdminAuth, (req, resp) => {
 })
 
 // DELETE /users/:email - Deactivate user
-router.delete("/:email", jwtAuth, userOrAdminAuth, (req, resp) => {
+router.delete("/:email", (req, resp) => {
     // Check if admin
     if(req.user && req.user.role !== 'ADMIN') {
         return resp.send(apiError("Access denied. Admin privileges required."))
@@ -539,6 +549,8 @@ router.delete("/:email", jwtAuth, userOrAdminAuth, (req, resp) => {
         }
     )
 })
+
+
 
 module.exports = router
 

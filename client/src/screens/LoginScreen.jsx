@@ -40,8 +40,8 @@ const LoginScreen = ({ navigation }) => {
          setSnackbarMessage(result.message || 'Login ');
       setSnackbarVisible(true);
 
-        const { token, name, email, phone, user_id } = result['data']
-        setCache(token, name, email, phone, user_id)
+        const { token, name, email, phone, user_id, User_role } = result['data']
+        setCache(token, name, email, phone, user_id, User_role)
 
         navigation.replace('Home')
       } else {
