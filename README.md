@@ -41,7 +41,14 @@ Dev Tools & Libraries:
 ———————————
 * Backend: bcrypt, crypto, cors, jsonwebtoken, multer, mysql2, nodemailer, redis.
 * Frontend: expo-status-bar, axios, react-dom, react-native-web, and related modules.
+  
 
 
 ShopEase delivers a polished, end-to-end solution for grocery retail, integrating a Cross platform user application, admin interface, secure backend, and efficient database—all built for maintainability, scalability, and future innovation
 This architecture aligns with best practices seen in full-stack grocery and e-commerce apps (e.g., React Native + Express/MongoDB setups)
+
+
+
+
+https://github.com/user-attachments/assets/27a380ea-7d28-4a11-8576-43aa9948596b
+
